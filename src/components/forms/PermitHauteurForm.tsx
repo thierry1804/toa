@@ -1,19 +1,22 @@
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { usePermitStore } from '@/store/permitStore';
 import { useAuthStore } from '@/store/authStore';
-import { useToastStore } from '@/store/toastStore';
-import { useI18n } from '@/lib/i18n';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Checkbox from '@/components/ui/Checkbox';
 import Textarea from '@/components/ui/Textarea';
 import MultiStepForm from './MultiStepForm';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, FileText } from 'lucide-react';
 
 // Schémas de validation pour chaque étape
 const step1Schema = z.object({
+  planPreventionId: z.string().min(1, 'Plan de prévention requis'),
+  prestataire: z.string().min(1, 'Prestataire requis'),
+  dateDebut: z.string().min(1, 'Date de début requise'),
+  dateFin: z.string().min(1, 'Date de fin requise'),
   descriptionOperation: z.string().min(5, 'Description trop courte (min 5 caractères)'),
   codeSite: z.string().min(1, 'Code site requis'),
   region: z.string().min(1, 'Région requise'),
@@ -79,6 +82,9 @@ const step5Schema = z.object({
   planSauvetageDisponible: z.boolean(),
   numerosUrgenceDisponibles: z.boolean(),
   secouristePresent: z.boolean(),
+  engagementDemandeur: z.boolean().refine((val) => val === true, {
+    message: 'L\'engagement est obligatoire pour soumettre le permis',
+  }),
 });
 
 type Step1Data = z.infer<typeof step1Schema>;
@@ -96,7 +102,27 @@ interface PermitHauteurFormProps {
 export default function PermitHauteurForm({ onComplete, onCancel, initialData }: PermitHauteurFormProps) {
   const { plansPrevention } = usePermitStore();
   const { user } = useAuthStore();
-  const { t } = useI18n();
+
+  // État global pour partager les données entre les étapes
+  const [formData, setFormData] = useState<any>(initialData || {});
+
+  // Générer le numéro de permis dès l'ouverture du formulaire
+  const [permitNumber] = useState(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `PTWH-${year}${month}${day}-${random}`;
+  });
+
+  // Filtrer les plans validés
+  const plansDisponibles = plansPrevention
+    .filter((p) => p.status === 'valide')
+    .map((p) => ({
+      value: p.id,
+      label: `${p.reference} - ${p.nomSite}`,
+    }));
 
   // Étape 1: Informations générales
   const Step1Component = (formData: any, updateFormData: (data: any) => void) => {
@@ -104,10 +130,15 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
       register,
       handleSubmit,
       watch,
+      setValue,
       formState: { errors },
     } = useForm<Step1Data>({
       resolver: zodResolver(step1Schema),
       defaultValues: {
+        planPreventionId: formData.planPreventionId || '',
+        prestataire: formData.prestataire || user?.entreprise || '',
+        dateDebut: formData.dateDebut || '',
+        dateFin: formData.dateFin || '',
         descriptionOperation: formData.descriptionOperation || '',
         codeSite: formData.codeSite || '',
         region: formData.region || '',
@@ -119,6 +150,16 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
     });
 
     const travailToiture = watch('travailToiture');
+    const hauteurChute = watch('hauteurChute');
+    const typePente = watch('typePente');
+
+    // Synchroniser les données en temps réel
+    useEffect(() => {
+      const subscription = watch((data) => {
+        updateFormData({ ...formData, ...data });
+      });
+      return () => subscription.unsubscribe();
+    }, [watch, formData, updateFormData]);
 
     const onSubmit = (data: Step1Data) => {
       updateFormData(data);
@@ -126,8 +167,38 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
 
     return (
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <Select
+          label="Référence du plan de prévention *"
+          {...register('planPreventionId')}
+          error={errors.planPreventionId?.message}
+          options={plansDisponibles}
+          placeholder="Sélectionnez un plan de prévention"
+        />
+
+        <Input
+          label="Prestataires - Sous-traitants *"
+          {...register('prestataire')}
+          error={errors.prestataire?.message}
+          placeholder="Nom de l'entreprise prestataire"
+        />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input
+            label="Date de début *"
+            type="date"
+            {...register('dateDebut')}
+            error={errors.dateDebut?.message}
+          />
+          <Input
+            label="Date de fin *"
+            type="date"
+            {...register('dateFin')}
+            error={errors.dateFin?.message}
+          />
+        </div>
+
         <Textarea
-          label="Description de l'opération *"
+          label="Description de l'opération / travaux *"
           {...register('descriptionOperation')}
           error={errors.descriptionOperation?.message}
           placeholder="Décrivez en détail l'opération à effectuer en hauteur..."
@@ -136,7 +207,7 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
-            label="Code Site *"
+            label="Nom du site *"
             {...register('codeSite')}
             error={errors.codeSite?.message}
             placeholder="Ex: ANT-001"
@@ -150,24 +221,44 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
         </div>
 
         <Input
-          label="Nombre d'Intervenants *"
+          label="Nombre d'intervenants *"
           type="number"
           {...register('nombreIntervenants', { valueAsNumber: true })}
           error={errors.nombreIntervenants?.message}
           min={1}
         />
 
-        <Select
-          label="Hauteur de chute *"
-          {...register('hauteurChute')}
-          error={errors.hauteurChute?.message}
-          options={[
-            { value: '<=3m', label: '≤ 3 mètres' },
-            { value: '3-8m', label: '3 à 8 mètres' },
-            { value: '8-40m', label: '8 à 40 mètres' },
-            { value: '>40m', label: '> 40 mètres' },
-          ]}
-        />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Hauteur de chute potentielle *
+          </label>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+            {[
+              { value: '<=3m', label: 'Hauteur ≤ 3m' },
+              { value: '3-8m', label: '3m < hauteur ≤ 8m' },
+              { value: '8-40m', label: '8m < hauteur ≤ 40m' },
+              { value: '>40m', label: 'Hauteur > 40m' },
+            ].map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => {
+                  setValue('hauteurChute', option.value as any);
+                  updateFormData({ ...formData, hauteurChute: option.value });
+                }}
+                className={`px-3 py-2 text-sm border rounded-md transition-colors ${hauteurChute === option.value
+                  ? 'bg-blue-50 border-blue-500 text-blue-700 ring-2 ring-blue-200'
+                  : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          {errors.hauteurChute && (
+            <p className="mt-1 text-sm text-red-600">{errors.hauteurChute.message}</p>
+          )}
+        </div>
 
         <Checkbox
           label="Travail en toiture"
@@ -176,17 +267,35 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
         />
 
         {travailToiture && (
-          <Select
-            label="Type de pente"
-            {...register('typePente')}
-            options={[
-              { value: 'plat', label: 'Plat (0-5°)' },
-              { value: 'legere', label: 'Légère (5-15°)' },
-              { value: 'forte', label: 'Forte (15-30°)' },
-              { value: 'tres_forte', label: 'Très forte (30-45°)' },
-              { value: 'extreme', label: 'Extrême (>45°)' },
-            ]}
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Type de pente
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2">
+              {[
+                { value: 'plat', label: 'Toit plat' },
+                { value: 'legere', label: 'Légère pente < 20°' },
+                { value: 'forte', label: 'Forte pente ≥ 20° et < 45°' },
+                { value: 'tres_forte', label: 'Très forte pente ≥ 45° et < 60°' },
+                { value: 'extreme', label: 'Pente extrême ≥ 60°' },
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    setValue('typePente', option.value as any);
+                    updateFormData({ ...formData, typePente: option.value });
+                  }}
+                  className={`px-3 py-2 text-sm border rounded-md transition-colors text-left ${typePente === option.value
+                    ? 'bg-blue-50 border-blue-500 text-blue-700 ring-2 ring-blue-200'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
         )}
       </form>
     );
@@ -197,7 +306,8 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
     const {
       register,
       handleSubmit,
-      formState: { errors },
+      watch,
+      setValue,
     } = useForm<Step2Data>({
       resolver: zodResolver(step2Schema),
       defaultValues: {
@@ -215,6 +325,14 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
       },
     });
 
+    // Synchroniser les données en temps réel
+    useEffect(() => {
+      const subscription = watch((data) => {
+        updateFormData({ ...formData, ...data });
+      });
+      return () => subscription.unsubscribe();
+    }, [watch, formData, updateFormData]);
+
     const onSubmit = (data: Step2Data) => {
       updateFormData(data);
     };
@@ -228,54 +346,96 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Checkbox
             label="Effondrement"
-            description="Risque d'effondrement de structure"
             {...register('effondrement')}
           />
           <Checkbox
             label="Incendie"
-            description="Risque d'incendie"
             {...register('incendie')}
           />
           <Checkbox
-            label="Déversement"
-            description="Risque de déversement de produits"
+            label="Déversement accidentel"
             {...register('deversement')}
           />
           <Checkbox
-            label="Électrisation"
-            description="Risque d'électrisation"
+            label="Electrisation / Electrocution"
             {...register('electrisation')}
           />
           <Checkbox
             label="Chute de personnes"
-            description="Risque de chute de personnes"
             {...register('chutePersonnes')}
           />
           <Checkbox
-            label="Blessure"
-            description="Risque de blessure"
+            label="Blessure (coupure…)"
             {...register('blessure')}
           />
           <Checkbox
-            label="Chute d'objets"
-            description="Risque de chute d'objets"
+            label="Chute d'objet"
             {...register('chuteObjet')}
           />
           <Checkbox
-            label="Exposition substances"
-            description="Exposition à des substances dangereuses"
+            label="Exposition aux substances dangereuses"
             {...register('expositionSubstances')}
           />
           <Checkbox
-            label="Écrasement"
-            description="Risque d'écrasement"
+            label="Ecrasement"
             {...register('ecrasement')}
           />
           <Checkbox
-            label="Mauvaise météo"
-            description="Conditions météorologiques défavorables"
+            label="Mauvaise condition météorologique"
             {...register('mauvaiseMeteo')}
           />
+        </div>
+
+        {/* Section Autre */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <Checkbox
+              label="Autre"
+              {...register('autres')}
+            />
+          </div>
+
+          <div className="ml-6">
+            <Input
+              label="Précisez le risque"
+              placeholder="Décrivez le risque spécifique..."
+              onKeyDown={(e) => {
+                const input = e.target as HTMLInputElement;
+                if (e.key === 'Enter' && input.value.trim()) {
+                  e.preventDefault();
+                  const currentAutres = formData.autres || [];
+                  if (!currentAutres.includes(input.value.trim())) {
+                    const newAutres = [...currentAutres, input.value.trim()];
+                    setValue('autres', newAutres);
+                    updateFormData({ ...formData, autres: newAutres });
+                    input.value = '';
+                  }
+                }
+              }}
+            />
+
+            {/* Affichage des risques "autres" ajoutés */}
+            {formData.autres && formData.autres.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {formData.autres.map((risque: string, index: number) => (
+                  <div key={index} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-md">
+                    <span className="text-sm text-gray-700">{risque}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newAutres = formData.autres.filter((_: string, i: number) => i !== index);
+                        setValue('autres', newAutres);
+                        updateFormData({ ...formData, autres: newAutres });
+                      }}
+                      className="text-red-500 hover:text-red-700 text-sm"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </form>
     );
@@ -286,7 +446,8 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
     const {
       register,
       handleSubmit,
-      formState: { errors },
+      watch,
+      setValue,
     } = useForm<Step3Data>({
       resolver: zodResolver(step3Schema),
       defaultValues: {
@@ -304,6 +465,14 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
         autres: formData.autres || [],
       },
     });
+
+    // Synchroniser les données en temps réel
+    useEffect(() => {
+      const subscription = watch((data) => {
+        updateFormData({ ...formData, ...data });
+      });
+      return () => subscription.unsubscribe();
+    }, [watch, formData, updateFormData]);
 
     const onSubmit = (data: Step3Data) => {
       updateFormData(data);
@@ -347,8 +516,7 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
             {...register('pointAncrage')}
           />
           <Checkbox
-            label="Échelle à crinoline"
-            description="Échelle avec protection anti-chute"
+            label="Echelle crinoline"
             {...register('echelleCrinoline')}
           />
           <Checkbox
@@ -372,6 +540,58 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
             {...register('escabeau')}
           />
         </div>
+
+        {/* Section Autre */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <Checkbox
+              label="Autre"
+              {...register('autres')}
+            />
+          </div>
+
+          <div className="ml-6">
+            <Input
+              label="Précisez l'équipement"
+              placeholder="Décrivez l'équipement spécifique..."
+              onKeyDown={(e) => {
+                const input = e.target as HTMLInputElement;
+                if (e.key === 'Enter' && input.value.trim()) {
+                  e.preventDefault();
+                  const currentAutres = formData.autres || [];
+                  if (!currentAutres.includes(input.value.trim())) {
+                    const newAutres = [...currentAutres, input.value.trim()];
+                    setValue('autres', newAutres);
+                    updateFormData({ ...formData, autres: newAutres });
+                    input.value = '';
+                  }
+                }
+              }}
+            />
+
+            {/* Affichage des équipements "autres" ajoutés */}
+            {formData.autres && formData.autres.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {formData.autres.map((equipement: string, index: number) => (
+                  <div key={index} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-md">
+                    <span className="text-sm text-gray-700">{equipement}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newAutres = formData.autres.filter((_: string, i: number) => i !== index);
+                        setValue('autres', newAutres);
+                        updateFormData({ ...formData, autres: newAutres });
+                      }}
+                      className="text-red-500 hover:text-red-700 text-sm"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </form>
     );
   };
@@ -381,7 +601,7 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
     const {
       register,
       handleSubmit,
-      formState: { errors },
+      watch,
     } = useForm<Step4Data>({
       resolver: zodResolver(step4Schema),
       defaultValues: {
@@ -408,6 +628,14 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
       },
     });
 
+    // Synchroniser les données en temps réel
+    useEffect(() => {
+      const subscription = watch((data) => {
+        updateFormData({ ...formData, ...data });
+      });
+      return () => subscription.unsubscribe();
+    }, [watch, formData, updateFormData]);
+
     const onSubmit = (data: Step4Data) => {
       updateFormData(data);
     };
@@ -423,13 +651,11 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
             <h4 className="font-medium text-gray-900 mb-2">Formation et compétences</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Checkbox
-                label="Personnel habilité"
-                description="Personnel formé et habilité"
+                label="Personnel habilité (formé et compétent)"
                 {...register('personnelHabilite')}
               />
               <Checkbox
-                label="Personnel apte"
-                description="Personnel médicalement apte"
+                label="Personnel apte médicalement"
                 {...register('personnelApte')}
               />
             </div>
@@ -443,15 +669,15 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
                 {...register('chaussuresSecurite')}
               />
               <Checkbox
-                label="Casque de sécurité"
+                label="Casque avec jugulaire"
                 {...register('casque')}
               />
               <Checkbox
-                label="Gants nitrile"
+                label="Gants de peinture nitrile"
                 {...register('gantsNitrile')}
               />
               <Checkbox
-                label="Gants isolants"
+                label="Gants isolant électrique"
                 {...register('gantsIsolants')}
               />
               <Checkbox
@@ -459,7 +685,7 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
                 {...register('gantsManutention')}
               />
               <Checkbox
-                label="Bouchons d'oreille"
+                label="Bouchon d'oreille"
                 {...register('bouchonOreille')}
               />
               <Checkbox
@@ -481,11 +707,11 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
                 {...register('doubleLonge')}
               />
               <Checkbox
-                label="Ligne de vie conforme"
+                label="Lignes de vie conforme"
                 {...register('ligneVieConforme')}
               />
               <Checkbox
-                label="Harnais vérifié"
+                label="Harnais vérifié et conforme"
                 {...register('harnaisVerifie')}
               />
             </div>
@@ -495,11 +721,15 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
             <h4 className="font-medium text-gray-900 mb-2">Vérifications et procédures</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Checkbox
-                label="Échafaudage conforme"
+                label="Balisage de la zone de travaux"
+                {...register('balisage')}
+              />
+              <Checkbox
+                label="Echafaudage contrôlé et conforme"
                 {...register('echafaudageConforme')}
               />
               <Checkbox
-                label="Échelle conforme"
+                label="Echelle en bon état (barreaux, montants, patins antidérapants)"
                 {...register('echelleConforme')}
               />
               <Checkbox
@@ -507,16 +737,12 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
                 {...register('sanglageOutils')}
               />
               <Checkbox
-                label="Travail à deux"
+                label="Travail à 2 obligatoire"
                 {...register('travailDeux')}
               />
               <Checkbox
-                label="Mesure du vent"
+                label="Mesure de la vitesse du vent"
                 {...register('mesureVent')}
-              />
-              <Checkbox
-                label="Balisage de la zone"
-                {...register('balisage')}
               />
             </div>
           </div>
@@ -530,15 +756,29 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
     const {
       register,
       handleSubmit,
-      formState: { errors },
+      watch,
     } = useForm<Step5Data>({
       resolver: zodResolver(step5Schema),
       defaultValues: {
         planSauvetageDisponible: formData.planSauvetageDisponible || false,
         numerosUrgenceDisponibles: formData.numerosUrgenceDisponibles || false,
         secouristePresent: formData.secouristePresent || false,
+        engagementDemandeur: formData.engagementDemandeur || false,
       },
     });
+
+    const planSauvetage = watch('planSauvetageDisponible');
+
+    // Vérifier si la hauteur > 20m (8-40m ou >40m)
+    const hauteurSuperieure20m = formData.hauteurChute === '8-40m' || formData.hauteurChute === '>40m';
+
+    // Synchroniser les données en temps réel
+    useEffect(() => {
+      const subscription = watch((data) => {
+        updateFormData({ ...formData, ...data });
+      });
+      return () => subscription.unsubscribe();
+    }, [watch, formData, updateFormData]);
 
     const onSubmit = (data: Step5Data) => {
       updateFormData(data);
@@ -550,7 +790,7 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
           <div className="flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-blue-900">Prévention urgence</p>
+              <p className="text-sm font-medium text-blue-900">Prévention en cas d'urgence</p>
               <p className="text-xs text-blue-700 mt-1">
                 Vérifiez que les mesures d'urgence sont en place avant de commencer les travaux.
               </p>
@@ -559,20 +799,38 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
         </div>
 
         <div className="space-y-4">
-          <Checkbox
-            label="Plan de sauvetage disponible"
-            description="Plan de sauvetage en cas d'accident"
-            {...register('planSauvetageDisponible')}
-          />
+          <div>
+            <Checkbox
+              label={`Plan de sauvetage disponible${hauteurSuperieure20m ? ' *' : ''}`}
+              description={hauteurSuperieure20m ? "Obligatoire pour les travaux en hauteur > 20m" : "Plan de sauvetage en cas d'urgence"}
+              {...register('planSauvetageDisponible')}
+            />
+            {hauteurSuperieure20m && !planSauvetage && (
+              <div className="mt-2 p-3 bg-orange-50 border border-orange-200 rounded-md">
+                <p className="text-sm text-orange-800">
+                  ⚠️ <strong>Attention:</strong> Le plan de sauvetage est obligatoire pour les travaux en hauteur supérieure à 20 mètres.
+                </p>
+              </div>
+            )}
+          </div>
+
           <Checkbox
             label="Numéros d'urgence disponibles"
             description="Numéros d'urgence affichés et accessibles"
             {...register('numerosUrgenceDisponibles')}
           />
           <Checkbox
-            label="Secouriste présent"
+            label="Secouriste présent sur site"
             description="Personnel formé aux premiers secours présent sur site"
             {...register('secouristePresent')}
+          />
+        </div>
+
+        <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <h4 className="font-medium text-gray-900 mb-3">Engagement du demandeur de permis</h4>
+          <Checkbox
+            label="En tant que demandeur de ce permis, je m'engage à respecter la mise en œuvre des mesures de prévention mentionnées à chaque début de travaux impliquant un travail en hauteur"
+            {...register('engagementDemandeur')}
           />
         </div>
 
@@ -581,20 +839,46 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
-              <p className="font-medium text-gray-700">Opération:</p>
-              <p className="text-gray-600">{formData.descriptionOperation}</p>
+              <p className="font-medium text-gray-700">Plan de prévention:</p>
+              <p className="text-gray-600">
+                {formData.planPreventionId ?
+                  plansDisponibles.find(p => p.value === formData.planPreventionId)?.label || 'N/A'
+                  : 'Non renseigné'}
+              </p>
+            </div>
+            <div>
+              <p className="font-medium text-gray-700">Prestataire:</p>
+              <p className="text-gray-600">{formData.prestataire || 'Non renseigné'}</p>
+            </div>
+            <div>
+              <p className="font-medium text-gray-700">Période:</p>
+              <p className="text-gray-600">
+                {formData.dateDebut && formData.dateFin ?
+                  `Du ${formData.dateDebut} au ${formData.dateFin}`
+                  : 'Non renseigné'}
+              </p>
             </div>
             <div>
               <p className="font-medium text-gray-700">Site:</p>
-              <p className="text-gray-600">{formData.codeSite} - {formData.region}</p>
+              <p className="text-gray-600">{formData.codeSite ? `${formData.codeSite} - ${formData.region}` : 'Non renseigné'}</p>
             </div>
             <div>
-              <p className="font-medium text-gray-700">Hauteur de chute:</p>
-              <p className="text-gray-600">{formData.hauteurChute}</p>
+              <p className="font-medium text-gray-700">Opération:</p>
+              <p className="text-gray-600">{formData.descriptionOperation || 'Non renseigné'}</p>
             </div>
             <div>
               <p className="font-medium text-gray-700">Intervenants:</p>
-              <p className="text-gray-600">{formData.nombreIntervenants} personne(s)</p>
+              <p className="text-gray-600">{formData.nombreIntervenants ? `${formData.nombreIntervenants} personne(s)` : 'Non renseigné'}</p>
+            </div>
+            <div>
+              <p className="font-medium text-gray-700">Hauteur de chute potentielle:</p>
+              <p className="text-gray-600">{formData.hauteurChute || 'Non renseigné'}</p>
+            </div>
+            <div>
+              <p className="font-medium text-gray-700">Travail en toiture:</p>
+              <p className="text-gray-600">
+                {formData.travailToiture ? `Oui${formData.typePente ? ` (${formData.typePente})` : ''}` : 'Non'}
+              </p>
             </div>
           </div>
         </div>
@@ -607,39 +891,46 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
       id: 'informations',
       title: 'Informations générales',
       description: 'Détails de l\'opération et caractéristiques du site',
-      component: <Step1Component />,
+      component: Step1Component,
     },
     {
       id: 'risques',
       title: 'Risques identifiés',
       description: 'Identification des risques liés aux travaux en hauteur',
-      component: <Step2Component />,
+      component: Step2Component,
     },
     {
       id: 'materiels',
       title: 'Matériels et équipements',
       description: 'Équipements utilisés pour les travaux',
-      component: <Step3Component />,
+      component: Step3Component,
     },
     {
       id: 'prevention',
       title: 'Mesures de prévention',
       description: 'Mesures de sécurité mises en place',
-      component: <Step4Component />,
+      component: Step4Component,
     },
     {
       id: 'urgence',
       title: 'Prévention urgence',
       description: 'Mesures d\'urgence et validation finale',
-      component: <Step5Component />,
+      component: Step5Component,
     },
   ];
 
   const handleComplete = (data: any) => {
+    // Récupérer la référence du plan de prévention
+    const planPrevention = plansPrevention.find(p => p.id === data.planPreventionId);
+
     // Préparer les données pour le store
     const permisData = {
       permisGeneralId: '', // Sera lié au permis général
-      planPreventionReference: '', // Sera récupéré du permis général
+      planPreventionId: data.planPreventionId,
+      planPreventionReference: planPrevention?.reference || '',
+      prestataire: data.prestataire,
+      dateDebut: new Date(data.dateDebut),
+      dateFin: new Date(data.dateFin),
       descriptionOperation: data.descriptionOperation,
       codeSite: data.codeSite,
       region: data.region,
@@ -699,27 +990,59 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
       planSauvetageDisponible: data.planSauvetageDisponible,
       numerosUrgenceDisponibles: data.numerosUrgenceDisponibles,
       secouristePresent: data.secouristePresent,
+      engagementDemandeur: data.engagementDemandeur,
       demandeurNom: user?.prenom && user?.nom ? `${user.prenom} ${user.nom}` : '',
       demandeurDate: new Date(),
       personnelsExecutants: [],
       validationsJournalieres: [],
-      status: 'en_attente_validation_chef' as const,
-      dateDebut: new Date(),
-      dateFin: new Date(),
+      status: 'brouillon' as const,
       creerPar: user?.email || '',
     };
 
     onComplete(permisData);
   };
 
+  // Récupérer la référence du plan de prévention sélectionné
+  const selectedPlan = formData.planPreventionId
+    ? plansPrevention.find(p => p.id === formData.planPreventionId)
+    : null;
+
   return (
-    <MultiStepForm
-      steps={steps}
-      onComplete={handleComplete}
-      onCancel={onCancel}
-      title="Permis de Travail en Hauteur"
-      description="Demande de permis de travail en hauteur"
-      submitLabel="Soumettre la demande"
-    />
+    <div className="space-y-6">
+      {/* Affichage des informations de référence */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+            <FileText className="h-5 w-5 text-blue-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-blue-900">Informations du Permis</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 text-sm">
+              <div>
+                <span className="text-blue-700 font-medium">Numéro de permis :</span>
+                <span className="text-blue-900 ml-2 font-mono">{permitNumber}</span>
+              </div>
+              <div>
+                <span className="text-blue-700 font-medium">Plan de prévention :</span>
+                <span className="text-blue-900 ml-2">
+                  {selectedPlan ? selectedPlan.reference : 'Non sélectionné'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <MultiStepForm
+        steps={steps}
+        onComplete={handleComplete}
+        onCancel={onCancel}
+        title="Permis de Travail en Hauteur"
+        description="Demande de permis de travail en hauteur"
+        submitLabel="Soumettre la demande"
+        formData={formData}
+        updateFormData={setFormData}
+      />
+    </div>
   );
 }

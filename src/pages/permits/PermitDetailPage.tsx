@@ -1,22 +1,29 @@
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { usePermitStore } from '@/store/permitStore';
 import { useAuthStore } from '@/store/authStore';
 // import { useI18n } from '@/lib/i18n'; // Unused import
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import { ArrowLeft, Edit, CheckCircle, XCircle, Clock, FileText, Users, Calendar, MapPin } from 'lucide-react';
+import ValidationJournaliereModal from '@/components/permits/ValidationJournaliereModal';
+import { ArrowLeft, Edit, CheckCircle, XCircle, Clock, FileText, Users, Calendar, MapPin, ClipboardList } from 'lucide-react';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import type { PermitStatus } from '@/types';
 
 export default function PermitDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getPermisGeneralById, getPlanPreventionById } = usePermitStore();
+  const { getPermisGeneralById, getPlanPreventionById, getPermisHauteurById } = usePermitStore();
   const { canAccessFeature } = useAuthStore();
   // const { t } = useI18n(); // TODO: Use translations
 
+  const [validationModalOpen, setValidationModalOpen] = useState(false);
+
   const permis = id ? getPermisGeneralById(id) : null;
   const planPrevention = permis ? getPlanPreventionById(permis.planPreventionId) : null;
+  
+  // Vérifier si c'est un permis en hauteur
+  const permisHauteur = id ? getPermisHauteurById(id) : null;
 
   if (!permis) {
     return (
@@ -88,6 +95,16 @@ export default function PermitDetailPage() {
             <Button variant="outline" onClick={() => navigate(`/permits/${id}/edit`)}>
               <Edit className="h-5 w-5 mr-2" />
               Modifier
+            </Button>
+          )}
+          {permisHauteur && permis.status === 'valide' && canAccessFeature('validate_permits_chef') && (
+            <Button 
+              variant="outline" 
+              onClick={() => setValidationModalOpen(true)}
+              className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+            >
+              <ClipboardList className="h-5 w-5 mr-2" />
+              Validation journalière
             </Button>
           )}
         </div>
@@ -385,6 +402,16 @@ export default function PermitDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Modal de validation journalière */}
+      {permisHauteur && (
+        <ValidationJournaliereModal
+          isOpen={validationModalOpen}
+          onClose={() => setValidationModalOpen(false)}
+          permisId={id!}
+          validations={permisHauteur.validationsJournalieres || []}
+        />
+      )}
     </div>
   );
 }

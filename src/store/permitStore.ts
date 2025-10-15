@@ -43,6 +43,9 @@ interface PermitStore {
   validerParHSE: (permisId: string, nom: string, commentaire?: string) => void;
   refuserPermis: (permisId: string, raison: string) => void;
   cloturerPermis: (permisId: string, nom: string, commentaire?: string) => void;
+
+  // Actions pour les validations journalières
+  addValidationJournaliere: (permisId: string, validation: any) => void;
 }
 
 // Données de démonstration
@@ -345,6 +348,21 @@ export const usePermitStore = create<PermitStore>()(
                   cloturePar: nom,
                   clotureDate: new Date(),
                   clotureCommentaire: commentaire,
+                  updatedAt: new Date(),
+                }
+              : p
+          ),
+        }));
+      },
+
+      // Actions pour les validations journalières
+      addValidationJournaliere: (permisId, validation) => {
+        set((state) => ({
+          permisHauteur: state.permisHauteur.map((p) =>
+            p.id === permisId
+              ? {
+                  ...p,
+                  validationsJournalieres: [...(p.validationsJournalieres || []), validation],
                   updatedAt: new Date(),
                 }
               : p

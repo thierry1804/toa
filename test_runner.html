@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tests Plan de Prévention - TOA Platform</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .test-section h3 {
+            color: #34495e;
+            margin-top: 0;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .success {
+            background-color: #27ae60;
+        }
+        .success:hover {
+            background-color: #229954;
+        }
+        .warning {
+            background-color: #f39c12;
+        }
+        .warning:hover {
+            background-color: #e67e22;
+        }
+        .danger {
+            background-color: #e74c3c;
+        }
+        .danger:hover {
+            background-color: #c0392b;
+        }
+        #console {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin-top: 20px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .status.success {
+            background-color: #d5f4e6;
+            color: #27ae60;
+            border: 1px solid #27ae60;
+        }
+        .status.error {
+            background-color: #fadbd8;
+            color: #e74c3c;
+            border: 1px solid #e74c3c;
+        }
+        .status.warning {
+            background-color: #fef9e7;
+            color: #f39c12;
+            border: 1px solid #f39c12;
+        }
+        .progress {
+            width: 100%;
+            height: 20px;
+            background-color: #ecf0f1;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: #3498db;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Tests de Conformité - Plan de Prévention HSSES</h1>
+        <p style="text-align: center; color: #7f8c8d;">
+            Tests automatisés pour vérifier la conformité avec le document SGI-PPHSSES-TOA-601
+        </p>
+
+        <div class="test-section">
+            <h3>📋 Tests de Fonctionnalité</h3>
+            <p>Ces tests vérifient le bon fonctionnement du formulaire de création de plan de prévention.</p>
+            <button onclick="runCreatePlanTest()" id="createTestBtn">Tester la Création de Plan</button>
+            <button onclick="runValidationTest()" id="validationTestBtn">Tester les Validations</button>
+            <button onclick="runEditTest()" id="editTestBtn">Tester la Modification</button>
+            <button onclick="runStoreTest()" id="storeTestBtn">Tester le Store</button>
+            <button onclick="runNavigationTest()" id="navigationTestBtn">Tester Navigation/Responsive</button>
+            <button onclick="runEdgeCasesTest()" id="edgeCasesTestBtn">Tester Cas Limites</button>
+            <button onclick="runAllTests()" id="allTestsBtn" class="success">Exécuter Tous les Tests</button>
+        </div>
+
+        <div class="test-section">
+            <h3>🔍 Tests de Conformité PDF</h3>
+            <p>Ces tests vérifient la conformité avec le document PDF SGI-PPHSSES-TOA-601.</p>
+            <button onclick="checkMissingFields()" id="missingFieldsBtn" class="warning">Vérifier les Champs Manquants</button>
+            <button onclick="checkValidationRules()" id="validationRulesBtn" class="warning">Vérifier les Règles de Validation</button>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Résultats des Tests</h3>
+            <div id="testResults">
+                <div class="status warning">Aucun test exécuté</div>
+            </div>
+            <div class="progress">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>📝 Console de Test</h3>
+            <button onclick="clearConsole()" class="danger">Effacer la Console</button>
+            <div id="console"></div>
+        </div>
+    </div>
+
+    <script src="test_plan_prevention.js"></script>
+    <script src="test_edit_and_store.js"></script>
+    <script>
+        // Variables globales pour le suivi des tests
+        let testResults = {
+            createPlan: null,
+            validation: null,
+            editPlan: null,
+            storePersistence: null,
+            navigation: null,
+            edgeCases: null,
+            missingFields: null,
+            validationRules: null
+        };
+
+        // Fonction pour mettre à jour la console
+        function updateConsole(message, type = 'info') {
+            const console = document.getElementById('console');
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : '📝';
+            console.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            console.scrollTop = console.scrollHeight;
+        }
+
+        // Fonction pour effacer la console
+        function clearConsole() {
+            document.getElementById('console').textContent = '';
+        }
+
+        // Fonction pour mettre à jour la barre de progression
+        function updateProgress(completed, total) {
+            const progressBar = document.getElementById('progressBar');
+            const percentage = (completed / total) * 100;
+            progressBar.style.width = `${percentage}%`;
+        }
+
+        // Fonction pour mettre à jour les résultats
+        function updateTestResults() {
+            const resultsDiv = document.getElementById('testResults');
+            const completed = Object.values(testResults).filter(result => result !== null).length;
+            const total = Object.keys(testResults).length;
+            
+            let html = '';
+            
+            Object.entries(testResults).forEach(([test, result]) => {
+                if (result === null) {
+                    html += `<div class="status warning">${getTestName(test)}: Non exécuté</div>`;
+                } else if (result === true) {
+                    html += `<div class="status success">${getTestName(test)}: ✅ Succès</div>`;
+                } else {
+                    html += `<div class="status error">${getTestName(test)}: ❌ Échec</div>`;
+                }
+            });
+            
+            resultsDiv.innerHTML = html;
+            updateProgress(completed, total);
+        }
+
+        // Fonction pour obtenir le nom d'affichage du test
+        function getTestName(test) {
+            const names = {
+                createPlan: 'Création de Plan',
+                validation: 'Validation des Champs',
+                editPlan: 'Modification de Plan',
+                storePersistence: 'Store et Persistance',
+                navigation: 'Navigation et Responsive',
+                edgeCases: 'Cas Limites',
+                missingFields: 'Champs Manquants',
+                validationRules: 'Règles de Validation'
+            };
+            return names[test] || test;
+        }
+
+        // Test de création de plan
+        async function runCreatePlanTest() {
+            updateConsole('Début du test de création de plan...', 'info');
+            document.getElementById('createTestBtn').disabled = true;
+            
+            try {
+                const result = await testCreatePreventionPlan();
+                testResults.createPlan = result;
+                updateConsole(`Test de création terminé: ${result ? 'Succès' : 'Échec'}`, result ? 'success' : 'error');
+            } catch (error) {
+                testResults.createPlan = false;
+                updateConsole(`Erreur lors du test de création: ${error.message}`, 'error');
+            }
+            
+            document.getElementById('createTestBtn').disabled = false;
+            updateTestResults();
+        }
+
+        // Test de validation
+        async function runValidationTest() {
+            updateConsole('Début du test de validation...', 'info');
+            document.getElementById('validationTestBtn').disabled = true;
+            
+            try {
+                const result = await testValidationFields();
+                testResults.validation = result;
+                updateConsole(`Test de validation terminé: ${result ? 'Succès' : 'Échec'}`, result ? 'success' : 'error');
+            } catch (error) {
+                testResults.validation = false;
+                updateConsole(`Erreur lors du test de validation: ${error.message}`, 'error');
+            }
+            
+            document.getElementById('validationTestBtn').disabled = false;
+            updateTestResults();
+        }
+
+        // Vérification des champs manquants
+        function checkMissingFields() {
+            updateConsole('Vérification des champs manquants par rapport au PDF...', 'info');
+            document.getElementById('missingFieldsBtn').disabled = true;
+            
+            try {
+                // Liste des champs manquants identifiés dans l'analyse
+                const missingFields = [
+                    'Numéro registre du commerce',
+                    'Qualité/fonction du représentant',
+                    'Fokontany',
+                    'Commune',
+                    'District',
+                    'Situation du site (ville/rurale/montagne)',
+                    'Section engagements du prestataire',
+                    'Section signatures',
+                    'Upload de documents avec catégorisation',
+                    'Workflow de validation/approbation',
+                    'Section suivi et clôture'
+                ];
+                
+                updateConsole(`Champs manquants identifiés: ${missingFields.length}`, 'warning');
+                missingFields.forEach(field => {
+                    updateConsole(`- ${field}`, 'warning');
+                });
+                
+                testResults.missingFields = missingFields.length > 0 ? false : true;
+                updateConsole(`Conformité champs: ${testResults.missingFields ? 'Conforme' : 'Non conforme'}`, testResults.missingFields ? 'success' : 'error');
+                
+            } catch (error) {
+                testResults.missingFields = false;
+                updateConsole(`Erreur lors de la vérification: ${error.message}`, 'error');
+            }
+            
+            document.getElementById('missingFieldsBtn').disabled = false;
+            updateTestResults();
+        }
+
+        // Vérification des règles de validation
+        function checkValidationRules() {
+            updateConsole('Vérification des règles de validation...', 'info');
+            document.getElementById('validationRulesBtn').disabled = true;
+            
+            try {
+                // Règles de validation manquantes ou incorrectes
+                const validationIssues = [
+                    'Validation des coordonnées GPS manquante',
+                    'Validation des numéros de téléphone manquante',
+                    'Validation de cohérence des dates manquante',
+                    'Arrays multi-valeurs limités (utilisation de .0)',
+                    'Certifications marquées optionnelles mais requises dans le PDF',
+                    'Coordonnées GPS marquées optionnelles mais requises dans le PDF'
+                ];
+                
+                updateConsole(`Problèmes de validation identifiés: ${validationIssues.length}`, 'warning');
+                validationIssues.forEach(issue => {
+                    updateConsole(`- ${issue}`, 'warning');
+                });
+                
+                testResults.validationRules = validationIssues.length === 0;
+                updateConsole(`Conformité validation: ${testResults.validationRules ? 'Conforme' : 'Non conforme'}`, testResults.validationRules ? 'success' : 'error');
+                
+            } catch (error) {
+                testResults.validationRules = false;
+                updateConsole(`Erreur lors de la vérification: ${error.message}`, 'error');
+            }
+            
+            document.getElementById('validationRulesBtn').disabled = false;
+            updateTestResults();
+        }
+
+        // Test de modification de plan
+        async function runEditTest() {
+            updateConsole('Début du test de modification de plan...', 'info');
+            document.getElementById('editTestBtn').disabled = true;
+            
+            try {
+                const result = await testEditExistingPlan();
+                testResults.editPlan = result;
+                updateConsole(`Test de modification terminé: ${result ? 'Succès' : 'Échec'}`, result ? 'success' : 'error');
+            } catch (error) {
+                testResults.editPlan = false;
+                updateConsole(`Erreur lors du test de modification: ${error.message}`, 'error');
+            }
+            
+            document.getElementById('editTestBtn').disabled = false;
+            updateTestResults();
+        }
+
+        // Test du store et persistance
+        async function runStoreTest() {
+            updateConsole('Début du test du store et persistance...', 'info');
+            document.getElementById('storeTestBtn').disabled = true;
+            
+            try {
+                const result = await testStoreAndPersistence();
+                testResults.storePersistence = result;
+                updateConsole(`Test du store terminé: ${result ? 'Succès' : 'Échec'}`, result ? 'success' : 'error');
+            } catch (error) {
+                testResults.storePersistence = false;
+                updateConsole(`Erreur lors du test du store: ${error.message}`, 'error');
+            }
+            
+            document.getElementById('storeTestBtn').disabled = false;
+            updateTestResults();
+        }
+
+        // Test de navigation et responsive
+        async function runNavigationTest() {
+            updateConsole('Début du test de navigation et responsive...', 'info');
+            document.getElementById('navigationTestBtn').disabled = true;
+            
+            try {
+                const result = await testNavigationAndResponsive();
+                testResults.navigation = result;
+                updateConsole(`Test de navigation terminé: ${result ? 'Succès' : 'Échec'}`, result ? 'success' : 'error');
+            } catch (error) {
+                testResults.navigation = false;
+                updateConsole(`Erreur lors du test de navigation: ${error.message}`, 'error');
+            }
+            
+            document.getElementById('navigationTestBtn').disabled = false;
+            updateTestResults();
+        }
+
+        // Test des cas limites
+        async function runEdgeCasesTest() {
+            updateConsole('Début du test des cas limites...', 'info');
+            document.getElementById('edgeCasesTestBtn').disabled = true;
+            
+            try {
+                const result = await testEdgeCases();
+                testResults.edgeCases = result;
+                updateConsole(`Test des cas limites terminé: ${result ? 'Succès' : 'Échec'}`, result ? 'success' : 'error');
+            } catch (error) {
+                testResults.edgeCases = false;
+                updateConsole(`Erreur lors du test des cas limites: ${error.message}`, 'error');
+            }
+            
+            document.getElementById('edgeCasesTestBtn').disabled = false;
+            updateTestResults();
+        }
+
+        // Exécution de tous les tests
+        async function runAllTests() {
+            updateConsole('Début de l\'exécution de tous les tests...', 'info');
+            document.getElementById('allTestsBtn').disabled = true;
+            
+            try {
+                // Exécuter tous les tests séquentiellement
+                await runCreatePlanTest();
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                await runValidationTest();
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                await runEditTest();
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                await runStoreTest();
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                await runNavigationTest();
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                await runEdgeCasesTest();
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                checkMissingFields();
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                checkValidationRules();
+                
+                // Calculer le taux de réussite global
+                const completed = Object.values(testResults).filter(result => result !== null).length;
+                const successful = Object.values(testResults).filter(result => result === true).length;
+                const successRate = completed > 0 ? (successful / completed) * 100 : 0;
+                
+                updateConsole(`Tests terminés! Taux de réussite: ${successRate.toFixed(1)}%`, successRate > 50 ? 'success' : 'warning');
+                
+            } catch (error) {
+                updateConsole(`Erreur lors de l'exécution des tests: ${error.message}`, 'error');
+            }
+            
+            document.getElementById('allTestsBtn').disabled = false;
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            updateConsole('Interface de test chargée. Prêt pour l\'exécution des tests.', 'info');
+            updateTestResults();
+        });
+    </script>
+</body>
+</html>

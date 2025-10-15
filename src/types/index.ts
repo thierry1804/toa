@@ -258,7 +258,13 @@ export interface PermisHauteur {
   numero: string;
   reference: string;
   permisGeneralId: string;
+  planPreventionId: string;
   planPreventionReference: string;
+
+  // Nouveaux champs conformes au PDF
+  prestataire: string;
+  dateDebut: Date;
+  dateFin: Date;
 
   // Détails spécifiques
   descriptionOperation: string;
@@ -332,6 +338,9 @@ export interface PermisHauteur {
   planSauvetageDisponible: boolean;
   numerosUrgenceDisponibles: boolean;
   secouristePresent: boolean;
+
+  // Engagement
+  engagementDemandeur: boolean;
 
   // Validations
   demandeurNom: string;

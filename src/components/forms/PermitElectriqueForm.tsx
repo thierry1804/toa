@@ -86,6 +86,9 @@ export default function PermitElectriqueForm({ onComplete, onCancel, initialData
   const { user } = useAuthStore();
   const { t } = useI18n();
 
+  // État global pour partager les données entre les étapes
+  const [formData, setFormData] = useState<any>(initialData || {});
+
   // Étape 1: Informations générales et type de travail
   const Step1Component = (formData: any, updateFormData: (data: any) => void) => {
     const {
@@ -586,31 +589,31 @@ export default function PermitElectriqueForm({ onComplete, onCancel, initialData
       id: 'informations',
       title: 'Informations générales',
       description: 'Type de travail et niveau de tension',
-      component: <Step1Component />,
+      component: Step1Component,
     },
     {
       id: 'description',
       title: 'Description et risques',
       description: 'Détails des travaux et risques identifiés',
-      component: <Step2Component />,
+      component: Step2Component,
     },
     {
       id: 'materiels',
       title: 'Matériels et prévention',
       description: 'Équipements et mesures de prévention',
-      component: <Step3Component />,
+      component: Step3Component,
     },
     {
       id: 'urgence',
       title: 'Prévention urgence',
       description: 'Mesures d\'urgence et engagement',
-      component: <Step4Component />,
+      component: Step4Component,
     },
     {
       id: 'consignation',
       title: 'Consignation énergétique',
       description: 'Informations de consignation (si applicable)',
-      component: <Step5Component />,
+      component: Step5Component,
     },
   ];
 
@@ -695,6 +698,8 @@ export default function PermitElectriqueForm({ onComplete, onCancel, initialData
       title="Permis de Travail Électrique"
       description="Demande de permis de travail électrique"
       submitLabel="Soumettre la demande"
+      formData={formData}
+      updateFormData={setFormData}
     />
   );
 }

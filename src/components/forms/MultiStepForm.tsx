@@ -7,7 +7,7 @@ interface Step {
   id: string;
   title: string;
   description?: string;
-  component: ReactNode;
+  component: ReactNode | ((formData: any, updateFormData: (data: any) => void) => ReactNode);
   isValid?: boolean;
 }
 
@@ -19,6 +19,8 @@ interface MultiStepFormProps {
   description?: string;
   submitLabel?: string;
   loading?: boolean;
+  formData?: any;
+  updateFormData?: (data: any) => void;
 }
 
 export default function MultiStepForm({
@@ -29,6 +31,8 @@ export default function MultiStepForm({
   description,
   submitLabel = 'Soumettre',
   loading = false,
+  formData = {},
+  updateFormData,
 }: MultiStepFormProps) {
   const [currentStep, setCurrentStep] = useState(0);
 
@@ -40,7 +44,7 @@ export default function MultiStepForm({
     if (!isLastStep) {
       setCurrentStep(currentStep + 1);
     } else {
-      onComplete({});
+      onComplete(formData);
     }
   };
 
@@ -122,7 +126,9 @@ export default function MultiStepForm({
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            {currentStepData.component}
+            {typeof currentStepData.component === 'function'
+              ? currentStepData.component(formData, updateFormData || (() => { }))
+              : currentStepData.component}
           </div>
         </CardContent>
       </Card>

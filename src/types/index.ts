@@ -43,32 +43,118 @@ export type PermitStatus =
 export interface PlanPrevention {
   id: string;
   reference: string;
+  revision: string; // ex: "2025"
   dateCreation: Date;
   dateDebut: Date;
   dateFin: Date;
   status: 'brouillon' | 'valide' | 'en_cours' | 'termine';
 
-  // Section 1: Informations Entreprise Prestataire
+  // Section 1: En-tête et Informations Générales
+  projetActivite: string; // Projet / Activité
+  nomSite: string;
+
+  // Section 2: Engagement du Prestataire
   entreprisePrestataire: string;
-  representantPrestataire: string;
+  numeroRCS: string; // Numéro d'inscription au registre du commerce
+  siegeSocial: string; // Adresse du siège social
+  representantPrestataire: string; // Nom complet (Mr/Mme/Mlle)
+  qualiteFonctionRepresentant: string; // Fonction du représentant
   contactPrestataire: string;
   emailPrestataire?: string;
-  adressePrestataire?: string;
 
-  // Section 2: Informations Maître d'Ouvrage
-  maitreOuvrage: string;
-  representantMaitreOuvrage: string;
-  contactMaitreOuvrage: string;
-  emailMaitreOuvrage?: string;
-
-  // Section 3: Localisation de l'Intervention
-  nomSite: string;
-  codeSite: string;
+  // Détails du site d'intervention
+  localite: string;
+  fokontany: string;
+  commune: string;
+  district: string;
   region: string;
-  adresseSite: string;
   coordonneesGPS?: string;
+  situationGeographique: 'en_ville' | 'rurale' | 'sur_montagne' | 'autre';
+  situationGeographiqueAutre?: string; // Si "autre" est sélectionné
+  dateSignature: Date;
 
-  // Section 4: Description des Travaux
+  // Signatures
+  signatureDonneurOrdre: {
+    nomPrenom: string;
+    fonction: string;
+    signature?: string; // URL ou données de signature
+  };
+  signaturePrestataire: {
+    nomSociete: string;
+    nomPrenom: string;
+    fonction: string;
+    signature?: string;
+  };
+
+  // Section 4: Risques Dus aux Activités et Installations
+  risquesActivites: {
+    // A. Identification des risques
+    environnement: {
+      actif: boolean;
+      pollutions: boolean;
+      incendie: boolean;
+    };
+    social: {
+      actif: boolean;
+      contestationRiveraine: boolean;
+      surete: boolean;
+      autres: string;
+    };
+    santeSécurite: {
+      actif: boolean;
+      accidentSecuriteRoutiere: boolean;
+      risqueChimique: boolean;
+      risqueHauteur: boolean;
+      risqueEnsevelissement: boolean;
+      risqueNoyade: boolean;
+      risqueElectrique: boolean;
+      risqueOutilsMain: boolean;
+      risqueOutillageElectroportatif: boolean;
+      accidentManutentionMecanique: boolean;
+      accidentManutentionManuelle: boolean;
+      risqueTravauxChaud: boolean;
+      risqueTravauxIsole: boolean;
+      risqueCoactivites: boolean;
+      risqueAmbianceThermique: boolean;
+      risqueBruit: boolean;
+      risquesPsychosociaux: boolean;
+      risqueMaladiesInfectieuses: boolean;
+      risquePaludisme: boolean;
+      autres: string;
+    };
+    infrastructures: {
+      actif: boolean;
+      risqueAccesSite: boolean;
+      risqueEtatInfrastructures: boolean;
+      autresRooftop: string;
+    };
+  };
+
+  // Détails des risques (Tableau 1)
+  detailsRisques: DetailRisque[];
+
+  // Sécurité routière spécifique (Tableau 2)
+  securiteRoutiere: {
+    gestionTempsPause: boolean;
+    formationConductionDefensive: boolean;
+    chauffeurApteMedicalement: boolean;
+    planTrajet: boolean;
+    geolocalisationFlottes: boolean;
+    checklistAvantDepart: boolean;
+    respectReglementsVehicule: boolean;
+    maintenancePeriodique: boolean;
+    evidences: Document[]; // Upload d'évidences pour chaque mesure
+  };
+
+  // B. Installations et Équipements
+  installations: Installation[];
+  materielsEquipements: MaterielEquipement[];
+
+  // Section 5: Documents HSSES à Fournir
+  documentsHSSES: DocumentHSSES[];
+
+  // Sections existantes
+  // Section Description des Travaux
   natureIntervention: string;
   descriptionTravaux: string;
   nombreIntervenants: number;
@@ -79,10 +165,10 @@ export interface PlanPrevention {
     pause: string;
   };
 
-  // Section 5: Risques Identifiés et Mesures de Prévention
+  // Risques Identifiés et Mesures de Prévention (format existant)
   risques: RisqueIdentifie[];
 
-  // Section 6: Équipements et Matériels
+  // Équipements et Matériels
   equipements: {
     equipementsProtection: string[];
     outilsTravail: string[];
@@ -90,7 +176,7 @@ export interface PlanPrevention {
     equipementsUrgence: string[];
   };
 
-  // Section 7: Formation et Compétences
+  // Formation et Compétences
   formation: {
     personnelForme: boolean;
     formationsRequises: string[];
@@ -98,7 +184,7 @@ export interface PlanPrevention {
     personnelHabilite: string[];
   };
 
-  // Section 8: Procédures d'Urgence
+  // Procédures d'Urgence
   proceduresUrgence: {
     planEvacuation: boolean;
     numerosUrgence: string[];
@@ -108,7 +194,7 @@ export interface PlanPrevention {
     hopitalReference: string;
   };
 
-  // Section 9: Surveillance et Contrôle
+  // Surveillance et Contrôle
   surveillance: {
     controlesReguliers: boolean;
     frequenceControles: string;
@@ -116,7 +202,7 @@ export interface PlanPrevention {
     pointsControle: string[];
   };
 
-  // Section 10: Documents et Attestations
+  // Documents et Attestations
   documents: Document[];
   attestations: {
     assuranceResponsabilite: boolean;
@@ -125,7 +211,7 @@ export interface PlanPrevention {
     autres: string[];
   };
 
-  // Section 11: Validation et Approbation
+  // Validation et Approbation
   validation: {
     validePar?: string;
     dateValidation?: Date;
@@ -133,7 +219,7 @@ export interface PlanPrevention {
     signature?: string;
   };
 
-  // Section 12: Suivi et Clôture
+  // Suivi et Clôture
   suivi: {
     incidents?: string[];
     observations?: string[];
@@ -147,6 +233,45 @@ export interface PlanPrevention {
   modifiePar?: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// Détail d'un risque (Tableau 1)
+export interface DetailRisque {
+  id: string;
+  detailRisque: string;
+  naturelocalisation: string;
+  mesuresProtection: string;
+  misesEnOeuvrePar: 'donneur_ordre' | 'prestataire';
+}
+
+// Installation
+export interface Installation {
+  id: string;
+  description: string;
+  present: boolean;
+  conditionsUtilisation: string;
+}
+
+// Matériel et Équipement
+export interface MaterielEquipement {
+  id: string;
+  description: string;
+  present: boolean;
+  conditionsUtilisation: string;
+  dateVerification?: Date;
+  verifiePar: string;
+  checklistAnnexe?: Document;
+}
+
+// Document HSSES à fournir
+export interface DocumentHSSES {
+  id: string;
+  numero: number;
+  action: string;
+  actionRealisee: boolean;
+  documentLivrable: string;
+  livrableFourni: boolean;
+  annexes: Document[];
 }
 
 export interface RisqueIdentifie {

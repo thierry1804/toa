@@ -26,6 +26,7 @@ const rolePermissions: Record<UserRole, string[]> = {
     'view_users',
     'create_users',
     'edit_users',
+    'delete_users',
     'view_statistics',
   ],
   chef_projet: [

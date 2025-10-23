@@ -527,6 +527,213 @@ export interface ConsignationDetail {
   visaDeconsignation?: string;
 }
 
+// Interventions et suivi journalier
+export type InterventionStatus =
+  | 'planifiee'
+  | 'en_cours'
+  | 'suspendue'
+  | 'terminee'
+  | 'annulee';
+
+export interface Intervention {
+  id: string;
+  reference: string;
+  permisId: string;
+  permisReference: string;
+  planPreventionId: string;
+
+  // Informations de base
+  prestataire: string;
+  nomSite: string;
+  codeSite: string;
+  region: string;
+  description: string;
+  typeIntervention: string;
+
+  // Dates
+  dateDebut: Date;
+  dateFin: Date;
+  dateDebutReel?: Date;
+  dateFinReelle?: Date;
+
+  // Statut
+  status: InterventionStatus;
+
+  // Équipe
+  nombreIntervenants: number;
+  responsableChantier: string;
+  responsableContact: string;
+
+  // Suivi journalier
+  validationsJournalieres: ValidationInterventionJournaliere[];
+  take5Records: Take5Record[];
+  documentsProgres: DocumentProgres[];
+
+  // Zone enclavée (hors réseau)
+  zoneEnclavee: boolean;
+  modeHorsLigne: boolean;
+
+  // Observations
+  incidents?: Incident[];
+  observations?: string[];
+
+  // Clôture
+  cloturePar?: string;
+  dateClotureFormelle?: Date;
+  commentairesCloture?: string;
+
+  // Metadata
+  creerPar: string;
+  modifiePar?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ValidationInterventionJournaliere {
+  id: string;
+  date: Date;
+  heureDebut: string;
+  heureFin?: string;
+
+  // Personnel présent
+  nombrePersonnes: number;
+  listePersonnel: string[];
+
+  // Conditions
+  conditionsMeteo?: string;
+  temperatureC?: number;
+  vitesseVentKmh?: number;
+
+  // Vérifications
+  verificationsSecurite: {
+    epiVerifies: boolean;
+    outillageVerifie: boolean;
+    zoneSecurisee: boolean;
+    consignesRappelees: boolean;
+    planSauvetageRevu: boolean;
+  };
+
+  // Activités réalisées
+  activitesRealisees: string;
+  avancementPourcentage: number;
+
+  // Take 5 journalier
+  take5Effectue: boolean;
+  take5Id?: string;
+
+  // Incidents/Observations
+  incidents: boolean;
+  incidentsDetails?: string;
+  observationsJour: string;
+
+  // Photos/Documents
+  photosAvancement: string[];
+  documents: string[];
+
+  // Signatures
+  signatureResponsable?: string;
+  signatureSuperviseur?: string;
+  valideParHSE?: boolean;
+  validateurHSE?: string;
+
+  // Statut
+  validee: boolean;
+  dateValidation?: Date;
+}
+
+export interface Take5Record {
+  id: string;
+  interventionId: string;
+  date: Date;
+  heure: string;
+
+  // Identification
+  responsableNom: string;
+  equipe: string[];
+  localisation: string;
+  tacheDescription: string;
+
+  // Les 5 étapes du Take 5
+  etape1_arreter: {
+    complete: boolean;
+    observations: string;
+  };
+
+  etape2_observer: {
+    complete: boolean;
+    dangersIdentifies: string[];
+    autresDangers: string;
+  };
+
+  etape3_analyser: {
+    complete: boolean;
+    risquesEvalues: RisqueEvalue[];
+  };
+
+  etape4_controler: {
+    complete: boolean;
+    mesuresControle: MesureControle[];
+  };
+
+  etape5_proceder: {
+    complete: boolean;
+    securiteConfirmee: boolean;
+    autorisationProceder: boolean;
+  };
+
+  // Validation
+  signature?: string;
+  validePar?: string;
+  dateValidation?: Date;
+
+  // Transmission HSE
+  transmisHSE: boolean;
+  dateTransmission?: Date;
+
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface RisqueEvalue {
+  danger: string;
+  niveauRisque: 'faible' | 'moyen' | 'eleve' | 'critique';
+  probabilite: 'faible' | 'moyenne' | 'elevee';
+  gravite: 'mineure' | 'moderee' | 'grave' | 'critique';
+}
+
+export interface MesureControle {
+  type: 'elimination' | 'substitution' | 'controle_ingenierie' | 'controle_administratif' | 'epi';
+  description: string;
+  miseEnPlace: boolean;
+  responsable: string;
+}
+
+export interface DocumentProgres {
+  id: string;
+  date: Date;
+  type: 'photo' | 'rapport' | 'schema' | 'autre';
+  description: string;
+  url: string;
+  uploadePar: string;
+}
+
+export interface Incident {
+  id: string;
+  date: Date;
+  heure: string;
+  type: 'accident' | 'presquaccident' | 'observation' | 'non_conformite';
+  gravite: 'faible' | 'moyenne' | 'elevee' | 'critique';
+  description: string;
+  personnesImpliquees: string[];
+  mesuresImmerdiates: string;
+  rapportComplet?: string;
+  photosIncident?: string[];
+  declarePar: string;
+  traitePar?: string;
+  dateTraitement?: Date;
+  statut: 'en_cours' | 'traite' | 'clos';
+}
+
 // Statistiques et KPIs
 export interface DashboardStats {
   // Permis
@@ -546,6 +753,7 @@ export interface DashboardStats {
   interventionsJour: number;
   interventionsSemaine: number;
   interventionsMois: number;
+  interventionsActives: number;
 
   // Sites
   sitesActifs: number;

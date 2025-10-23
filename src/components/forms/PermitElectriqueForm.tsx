@@ -11,6 +11,7 @@ import Checkbox from '@/components/ui/Checkbox';
 import Textarea from '@/components/ui/Textarea';
 import MultiStepForm from './MultiStepForm';
 import { AlertCircle } from 'lucide-react';
+import { useState } from 'react';
 
 // Schémas de validation pour chaque étape
 const step1Schema = z.object({

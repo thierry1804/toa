@@ -9,6 +9,7 @@ import PermitDetailPage from './pages/permits/PermitDetailPage';
 import PreventionListPage from './pages/prevention/PreventionListPage';
 import PreventionFormPage from './pages/prevention/PreventionFormPage';
 import StatisticsPage from './pages/statistics/StatisticsPage';
+import InterventionsPage from './pages/InterventionsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,7 +37,7 @@ function App() {
             <Route path="prevention" element={<PreventionListPage />} />
             <Route path="prevention/new" element={<PreventionFormPage />} />
             <Route path="prevention/:id/edit" element={<PreventionFormPage />} />
-            <Route path="interventions" element={<div className="p-8 text-center text-gray-500">Page Interventions - En développement</div>} />
+            <Route path="interventions" element={<InterventionsPage />} />
             <Route path="statistics" element={<StatisticsPage />} />
             <Route path="users" element={<div className="p-8 text-center text-gray-500">Page Utilisateurs - En développement</div>} />
           </Route>

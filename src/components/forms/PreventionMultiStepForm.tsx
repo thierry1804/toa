@@ -54,9 +54,14 @@ const step5Schema = z.object({
 
 const step6Schema = z.object({
   risquesIdentifies: z.array(z.object({
+    id: z.string(),
+    categorie: z.string().min(1),
     risque: z.string().min(1, 'Description du risque requise'),
-    niveau: z.enum(['faible', 'moyen', 'élevé']),
+    gravite: z.enum(['faible', 'moyenne', 'grave', 'mortelle']),
+    probabilite: z.enum(['rare', 'peu_probable', 'probable', 'tres_probable']),
+    niveau: z.enum(['faible', 'modere', 'eleve', 'intolerable']),
     mesures: z.string().min(1, 'Mesures préventives requises'),
+    mesuresExistentes: z.boolean(),
   })).min(1, 'Au moins un risque doit être identifié'),
 });
 
@@ -88,6 +93,12 @@ const step10Schema = z.object({
   }),
 });
 
+const step11Schema = z.object({
+  confirmationFinale: z.boolean().refine(val => val === true, {
+    message: 'Vous devez confirmer les informations',
+  }),
+});
+
 // Combine all schemas for final validation
 const preventionPlanSchema = step1Schema
   .merge(step2Schema)
@@ -98,7 +109,8 @@ const preventionPlanSchema = step1Schema
   .merge(step7Schema)
   .merge(step8Schema)
   .merge(step9Schema)
-  .merge(step10Schema);
+  .merge(step10Schema)
+  .merge(step11Schema);
 
 type PreventionPlan = z.infer<typeof preventionPlanSchema>;
 
@@ -107,6 +119,259 @@ interface PreventionMultiStepFormProps {
   onCancel?: () => void;
   initialData?: Partial<PreventionPlan>;
 }
+
+const categoriesRisques = [
+  {
+    id: 'environnement',
+    label: 'Risques liés à l\'environnement',
+    sousCategories: [
+      { id: 'pollution', label: 'Pollutions (déversement)' },
+      { id: 'incendie', label: 'Incendie' }
+    ]
+  },
+  {
+    id: 'chantier',
+    label: 'Risques liés au chantier',
+    sousCategories: [
+      { id: 'voie_circulation', label: 'Voie de circulation' },
+      { id: 'zone_chargement', label: 'Zone de chargement/déchargement' },
+      { id: 'stockage', label: 'Stockage' }
+    ]
+  },
+  {
+    id: 'travaux',
+    label: 'Risques liés aux travaux',
+    sousCategories: [
+      { id: 'travaux_hauteur', label: 'Travaux en hauteur' },
+      { id: 'manutention', label: 'Manutention manuelle' },
+      { id: 'outillage', label: 'Utilisation d\'outils et d\'équipements' },
+      { id: 'chimique', label: 'Produits chimiques' },
+      { id: 'electrique', label: 'Risque électrique' },
+      { id: 'tronconnage', label: 'Tronçonnage, meulage, soudage' },
+      { id: 'demolition', label: 'Démolition' },
+      { id: 'travaux_enterres', label: 'Travaux en milieu confiné ou enterré' },
+      { id: 'coactivite', label: 'Cœxistence d\'activités' },
+      { id: 'autres_travaux', label: 'Autres risques liés aux travaux' }
+    ]
+  },
+  {
+    id: 'autres',
+    label: 'Autres risques',
+    sousCategories: [
+      { id: 'meteo', label: 'Conditions météorologiques' },
+      { id: 'vandalisme', label: 'Vandalisme, vol' },
+      { id: 'autres_risques', label: 'Autres risques non identifiés' }
+    ]
+  }
+];
+
+const RisquesIdentifies = ({ formData, updateFormData }) => {
+  const [selectedCategory, setSelectedCategory] = useState(null);
+
+  const selectedRisques = (formData.risquesIdentifies || []).map(r => r.id);
+
+  const handleSelectCategory = (categoryId) => {
+    setSelectedCategory(categoryId);
+  };
+
+  const toggleRisque = (risqueId) => {
+    const currentRisques = formData.risquesIdentifies || [];
+
+    if (currentRisques.some(r => r.id === risqueId)) {
+      // remove
+      const updated = currentRisques.filter(r => r.id !== risqueId);
+      updateFormData({ risquesIdentifies: updated });
+    } else {
+      // add
+      let risqueLabel = '';
+      let categorieLabel = '';
+      
+      categoriesRisques.forEach(categorie => {
+        const sousCategorie = categorie.sousCategories.find(sc => sc.id === risqueId);
+        if (sousCategorie) {
+          risqueLabel = sousCategorie.label;
+          categorieLabel = categorie.label;
+        }
+      });
+
+      const newRisque = {
+        id: risqueId,
+        categorie: categorieLabel,
+        risque: risqueLabel,
+        gravite: 'faible',
+        probabilite: 'rare',
+        niveau: 'faible',
+        mesures: '',
+        mesuresExistentes: false,
+      };
+
+      updateFormData({ risquesIdentifies: [...currentRisques, newRisque] });
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
+        <h4 className="text-sm font-medium text-yellow-800 flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4" />
+          Identification des risques
+        </h4>
+        <p className="text-xs text-yellow-700 mt-1">
+          Sélectionnez les risques potentiels liés à l'intervention
+        </p>
+      </div>
+      
+      <div className="space-y-4">
+        <h5 className="font-medium text-sm text-gray-700">Catégories de risques</h5>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {categoriesRisques.map((categorie) => (
+            <div 
+              key={categorie.id}
+              className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                selectedCategory === categorie.id ? 'border-blue-500 bg-blue-50' : 'hover:bg-gray-50'
+              }`}
+              onClick={() => handleSelectCategory(categorie.id)}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-medium">{categorie.label}</span>
+                <svg 
+                  className={`w-5 h-5 transition-transform ${
+                    selectedCategory === categorie.id ? 'rotate-180' : ''
+                  }`} 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M19 9l-7 7-7-7" 
+                  />
+                </svg>
+              </div>
+              
+              {selectedCategory === categorie.id && (
+                <div className="mt-3 space-y-2">
+                  {categorie.sousCategories.map((sousCategorie) => (
+                    <div 
+                      key={sousCategorie.id}
+                      className="flex items-center space-x-2 p-2 rounded hover:bg-blue-100"
+                    >
+                      <input
+                        type="checkbox"
+                        id={`risque-${sousCategorie.id}`}
+                        checked={selectedRisques.includes(sousCategorie.id)}
+                        onChange={(e) => toggleRisque(sousCategorie.id)}
+                        className="h-4 w-4 text-blue-600 rounded"
+                      />
+                      <label 
+                        htmlFor={`risque-${sousCategorie.id}`}
+                        className="text-sm"
+                      >
+                        {sousCategorie.label}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        
+        {/* Détails des risques sélectionnés */}
+        {(formData.risquesIdentifies || []).length > 0 && (
+          <div className="mt-6 space-y-4">
+            <h5 className="font-medium text-sm text-gray-700">Détails des risques sélectionnés</h5>
+            
+            {(formData.risquesIdentifies || []).map((risque, index) => (
+              <div key={risque.id} className="border rounded-lg p-4 space-y-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h6 className="font-medium">{risque.risque}</h6>
+                    <p className="text-xs text-gray-500">{risque.categorie}</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="text-red-500 text-sm"
+                    onClick={() => {
+                      const updated = (formData.risquesIdentifies || []).filter((_, i) => i !== index);
+                      updateFormData({ risquesIdentifies: updated });
+                    }}
+                  >
+                    Retirer
+                  </button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Select
+                    name={`risquesIdentifies.${index}.gravite`}
+                    label="Gravité"
+                    options={[
+                      { value: 'faible', label: 'Faible' },
+                      { value: 'moyenne', label: 'Moyenne' },
+                      { value: 'grave', label: 'Grave' },
+                      { value: 'mortelle', label: 'Mortelle' },
+                    ]}
+                    required
+                  />
+                  
+                  <Select
+                    name={`risquesIdentifies.${index}.probabilite`}
+                    label="Probabilité"
+                    options={[
+                      { value: 'rare', label: 'Rare' },
+                      { value: 'peu_probable', label: 'Peu probable' },
+                      { value: 'probable', label: 'Probable' },
+                      { value: 'tres_probable', label: 'Très probable' },
+                    ]}
+                    required
+                  />
+                  
+                  <Select
+                    name={`risquesIdentifies.${index}.niveau`}
+                    label="Niveau de risque"
+                    options={[
+                      { value: 'faible', label: 'Faible' },
+                      { value: 'modere', label: 'Modéré' },
+                      { value: 'eleve', label: 'Élevé' },
+                      { value: 'intolerable', label: 'Intolérable' },
+                    ]}
+                    required
+                  />
+                </div>
+                
+                <Textarea
+                  name={`risquesIdentifies.${index}.mesures`}
+                  label="Mesures de prévention prévues"
+                  placeholder="Décrivez les mesures de prévention spécifiques pour ce risque"
+                  rows={2}
+                  required
+                />
+                
+                <div className="flex items-center">
+                  <Checkbox
+                    name={`risquesIdentifies.${index}.mesuresExistentes`}
+                    label="Des mesures de prévention sont déjà en place"
+                    className="mr-2"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const documentOptions = [
+  { value: 'attestation_assurance', label: 'Attestation d\'assurance responsabilité civile' },
+  { value: 'plan_intervention', label: 'Plan d\'intervention détaillé' },
+  { value: 'fiches_risques', label: 'Fiches de poste et d\'exposition aux risques' },
+  { value: 'autres', label: 'Autres documents' },
+];
 
 export default function PreventionMultiStepForm({ onSubmit, onCancel, initialData = {} }: PreventionMultiStepFormProps) {
   const { t } = useI18n();
@@ -190,7 +455,6 @@ export default function PreventionMultiStepForm({ onSubmit, onCancel, initialDat
               name="emailMaitreOuvrage"
               label="Email"
               type="email"
-              required
             />
           </div>
         </div>
@@ -332,76 +596,7 @@ export default function PreventionMultiStepForm({ onSubmit, onCancel, initialDat
       title: 'Risques Identifiés',
       description: 'Identification des risques potentiels',
       icon: AlertTriangle,
-      component: (
-        <div className="space-y-4">
-          <div className="bg-yellow-50 p-4 rounded-lg">
-            <h4 className="text-sm font-medium text-yellow-800">Liste des risques identifiés</h4>
-            <p className="text-xs text-yellow-700 mt-1">
-              Ajoutez tous les risques potentiels liés à l'intervention
-            </p>
-          </div>
-          
-          <div className="space-y-4">
-            {formData.risquesIdentifies?.map((_, index) => (
-              <div key={index} className="border rounded-lg p-4 space-y-4">
-                <div className="flex justify-between items-center">
-                  <h5 className="font-medium">Risque {index + 1}</h5>
-                  {index > 0 && (
-                    <button
-                      type="button"
-                      className="text-red-500 text-sm"
-                      onClick={() => {
-                        const updatedRisques = [...(formData.risquesIdentifies || [])];
-                        updatedRisques.splice(index, 1);
-                        updateFormData({ risquesIdentifies: updatedRisques });
-                      }}
-                    >
-                      Supprimer
-                    </button>
-                  )}
-                </div>
-                <Textarea
-                  name={`risquesIdentifies.${index}.risque`}
-                  label="Description du risque"
-                  required
-                  rows={2}
-                />
-                <Select
-                  name={`risquesIdentifies.${index}.niveau`}
-                  label="Niveau de risque"
-                  options={[
-                    { value: 'faible', label: 'Faible' },
-                    { value: 'moyen', label: 'Moyen' },
-                    { value: 'élevé', label: 'Élevé' },
-                  ]}
-                  required
-                />
-                <Textarea
-                  name={`risquesIdentifies.${index}.mesures`}
-                  label="Mesures de prévention"
-                  required
-                  rows={2}
-                />
-              </div>
-            ))}
-            
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                const updatedRisques = [...(formData.risquesIdentifies || []), {
-                  risque: '',
-                  niveau: 'faible',
-                  mesures: ''
-                }];
-                updateFormData({ risquesIdentifies: updatedRisques });
-              }}
-            >
-              Ajouter un risque
-            </Button>
-          </div>
-        </div>
-      ),
+      component: <RisquesIdentifies formData={formData} updateFormData={updateFormData} />,
       validationSchema: step6Schema,
     },
     // Step 7: Équipements de Sécurité
@@ -570,26 +765,27 @@ export default function PreventionMultiStepForm({ onSubmit, onCancel, initialDat
           <div className="space-y-4">
             <h4 className="font-medium">Documents à fournir</h4>
             <div className="space-y-2">
-              <Checkbox
-                name="documentsFournis"
-                value="attestation_assurance"
-                label="Attestation d'assurance responsabilité civile"
-              />
-              <Checkbox
-                name="documentsFournis"
-                value="plan_intervention"
-                label="Plan d'intervention détaillé"
-              />
-              <Checkbox
-                name="documentsFournis"
-                value="fiches_risques"
-                label="Fiches de poste et d'exposition aux risques"
-              />
-              <Checkbox
-                name="documentsFournis"
-                value="autres"
-                label="Autres documents"
-              />
+              {documentOptions.map(({ value, label }) => (
+                <div key={value} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`doc-${value}`}
+                    checked={(formData.documentsFournis || []).includes(value)}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      const updated = checked
+                        ? [...(formData.documentsFournis || []), value]
+                        : (formData.documentsFournis || []).filter((v) => v !== value);
+                      updateFormData({ documentsFournis: updated });
+                    }}
+                  />
+                  <label
+                    htmlFor={`doc-${value}`}
+                    className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    {label}
+                  </label>
+                </div>
+              ))}
             </div>
           </div>
           
@@ -656,13 +852,13 @@ export default function PreventionMultiStepForm({ onSubmit, onCancel, initialDat
                 </p>
               </div>
               
-              {formData.risquesIdentifies?.length > 0 && (
+              {(formData.risquesIdentifies || []).length > 0 && (
                 <div className="p-4">
                   <h5 className="font-medium text-gray-900">
-                    {formData.risquesIdentifies.length} risque(s) identifié(s)
+                    {(formData.risquesIdentifies || []).length} risque(s) identifié(s)
                   </h5>
                   <div className="mt-2 space-y-2">
-                    {formData.risquesIdentifies.map((risque, index) => (
+                    {(formData.risquesIdentifies || []).map((risque, index) => (
                       <div key={index} className="text-sm text-gray-600">
                         • {risque.risque} <span className="text-gray-400">({risque.niveau})</span>
                       </div>
@@ -687,11 +883,7 @@ export default function PreventionMultiStepForm({ onSubmit, onCancel, initialDat
           </div>
         </div>
       ),
-      validationSchema: z.object({
-        confirmationFinale: z.boolean().refine(val => val === true, {
-          message: 'Vous devez confirmer les informations',
-        }),
-      }),
+      validationSchema: step11Schema,
     },
   ];
 

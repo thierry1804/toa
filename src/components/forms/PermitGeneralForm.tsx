@@ -3,8 +3,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { usePermitStore } from '@/store/permitStore';
 import { useAuthStore } from '@/store/authStore';
-import { useToastStore } from '@/store/toastStore';
-import { useI18n } from '@/lib/i18n';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Checkbox from '@/components/ui/Checkbox';
@@ -56,15 +54,16 @@ type Step2Data = z.infer<typeof step2Schema>;
 type Step3Data = z.infer<typeof step3Schema>;
 
 interface PermitGeneralFormProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onComplete: (data: any) => void;
   onCancel?: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   initialData?: any;
 }
 
-export default function PermitGeneralForm({ onComplete, onCancel, initialData }: PermitGeneralFormProps) {
+export default function PermitGeneralForm({ onComplete, onCancel }: PermitGeneralFormProps) {
   const { plansPrevention } = usePermitStore();
   const { user } = useAuthStore();
-  const { t } = useI18n();
 
   // Filtrer les plans validés
   const plansDisponibles = plansPrevention
@@ -186,7 +185,6 @@ export default function PermitGeneralForm({ onComplete, onCancel, initialData }:
       register,
       handleSubmit,
       watch,
-      formState: { errors },
     } = useForm<Step2Data>({
       resolver: zodResolver(step2Schema),
       defaultValues: {
@@ -408,6 +406,7 @@ export default function PermitGeneralForm({ onComplete, onCancel, initialData }:
     },
   ];
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleComplete = (data: any) => {
     // Préparer les données pour le store
     const permisData = {

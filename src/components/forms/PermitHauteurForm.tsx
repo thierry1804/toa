@@ -94,8 +94,10 @@ type Step4Data = z.infer<typeof step4Schema>;
 type Step5Data = z.infer<typeof step5Schema>;
 
 interface PermitHauteurFormProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onComplete: (data: any) => void;
   onCancel?: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   initialData?: any;
 }
 
@@ -104,6 +106,7 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
   const { user } = useAuthStore();
 
   // État global pour partager les données entre les étapes
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [formData, setFormData] = useState<any>(initialData || {});
 
   // Générer le numéro de permis dès l'ouverture du formulaire
@@ -125,6 +128,7 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
     }));
 
   // Étape 1: Informations générales
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Step1Component = (formData: any, updateFormData: (data: any) => void) => {
     const {
       register,
@@ -243,7 +247,7 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
                 key={option.value}
                 type="button"
                 onClick={() => {
-                  setValue('hauteurChute', option.value as any);
+                  setValue('hauteurChute', option.value as '<=3m' | '3-8m' | '8-40m' | '>40m');
                   updateFormData({ ...formData, hauteurChute: option.value });
                 }}
                 className={`px-3 py-2 text-sm border rounded-md transition-colors ${hauteurChute === option.value
@@ -283,7 +287,7 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
                   key={option.value}
                   type="button"
                   onClick={() => {
-                    setValue('typePente', option.value as any);
+                    setValue('typePente', option.value as 'plat' | 'legere' | 'forte' | 'tres_forte' | 'extreme');
                     updateFormData({ ...formData, typePente: option.value });
                   }}
                   className={`px-3 py-2 text-sm border rounded-md transition-colors text-left ${typePente === option.value
@@ -302,6 +306,7 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
   };
 
   // Étape 2: Risques identifiés
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Step2Component = (formData: any, updateFormData: (data: any) => void) => {
     const {
       register,
@@ -442,6 +447,7 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
   };
 
   // Étape 3: Matériels et équipements
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Step3Component = (formData: any, updateFormData: (data: any) => void) => {
     const {
       register,
@@ -597,6 +603,7 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
   };
 
   // Étape 4: Mesures de prévention
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Step4Component = (formData: any, updateFormData: (data: any) => void) => {
     const {
       register,
@@ -752,6 +759,7 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
   };
 
   // Étape 5: Prévention urgence et validation
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Step5Component = (formData: any, updateFormData: (data: any) => void) => {
     const {
       register,
@@ -919,6 +927,7 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
     },
   ];
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleComplete = (data: any) => {
     // Récupérer la référence du plan de prévention
     const planPrevention = plansPrevention.find(p => p.id === data.planPreventionId);

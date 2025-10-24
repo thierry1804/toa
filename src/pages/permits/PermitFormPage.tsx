@@ -1,8 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { usePermitStore } from '@/store/permitStore';
-import { useAuthStore } from '@/store/authStore';
 import { useToastStore } from '@/store/toastStore';
-import { useI18n } from '@/lib/i18n';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import PermitGeneralForm from '@/components/forms/PermitGeneralForm';
@@ -14,12 +12,9 @@ export default function PermitFormPage() {
   const { type } = useParams();
   const navigate = useNavigate();
   const { addPermisGeneral, addPermisHauteur, addPermisElectrique } = usePermitStore();
-  const { user } = useAuthStore();
   const { success, error } = useToastStore();
-  const { t } = useI18n();
 
-  const isEdit = false; // Pour l'instant, on ne gère que la création
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleComplete = async (data: any) => {
     try {
       if (type === 'general') {

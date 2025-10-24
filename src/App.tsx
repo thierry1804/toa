@@ -13,7 +13,6 @@ import InterventionDetailPage from './pages/interventions/InterventionDetailPage
 import UsersListPage from './pages/users/UsersListPage';
 import UserFormPage from './pages/users/UserFormPage';
 import StatisticsPage from './pages/statistics/StatisticsPage';
-import InterventionsPage from './pages/InterventionsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {

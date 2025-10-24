@@ -61,7 +61,6 @@ export default function Take5Form({
   });
 
   const [nouveauMembre, setNouveauMembre] = useState('');
-  const [nouveauDanger, setNouveauDanger] = useState('');
   const [nouveauRisque, setNouveauRisque] = useState<RisqueEvalue>({
     danger: '',
     niveauRisque: 'faible',
@@ -469,7 +468,7 @@ export default function Take5Form({
                 ]}
                 value={nouveauRisque.probabilite}
                 onChange={(e) =>
-                  setNouveauRisque({ ...nouveauRisque, probabilite: e.target.value as any })
+                  setNouveauRisque({ ...nouveauRisque, probabilite: e.target.value as 'faible' | 'moyenne' | 'elevee' })
                 }
               />
               <Select
@@ -482,7 +481,7 @@ export default function Take5Form({
                 ]}
                 value={nouveauRisque.gravite}
                 onChange={(e) =>
-                  setNouveauRisque({ ...nouveauRisque, gravite: e.target.value as any })
+                  setNouveauRisque({ ...nouveauRisque, gravite: e.target.value as 'mineure' | 'moderee' | 'grave' | 'critique' })
                 }
               />
               <Select
@@ -495,7 +494,7 @@ export default function Take5Form({
                 ]}
                 value={nouveauRisque.niveauRisque}
                 onChange={(e) =>
-                  setNouveauRisque({ ...nouveauRisque, niveauRisque: e.target.value as any })
+                  setNouveauRisque({ ...nouveauRisque, niveauRisque: e.target.value as 'faible' | 'moyen' | 'eleve' | 'critique' })
                 }
               />
             </div>
@@ -576,7 +575,7 @@ export default function Take5Form({
                 { value: 'epi', label: 'Équipement de Protection Individuelle (EPI)' },
               ]}
               value={nouvelleMesure.type}
-              onChange={(e) => setNouvelleMesure({ ...nouvelleMesure, type: e.target.value as any })}
+              onChange={(e) => setNouvelleMesure({ ...nouvelleMesure, type: e.target.value as 'elimination' | 'substitution' | 'controle_ingenierie' | 'controle_administratif' | 'epi' })}
             />
             <Textarea
               label="Description de la mesure"

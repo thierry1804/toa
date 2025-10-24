@@ -52,6 +52,7 @@ export interface PlanPrevention {
   // Section 1: En-tête et Informations Générales
   projetActivite: string; // Projet / Activité
   nomSite: string;
+  codeSite: string; // Code unique du site
 
   // Section 2: Engagement du Prestataire
   entreprisePrestataire: string;
@@ -231,6 +232,8 @@ export interface PlanPrevention {
   // Metadata
   creerPar: string;
   modifiePar?: string;
+  validePar?: string;
+  dateValidation?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -487,8 +490,6 @@ export interface PermisHauteur {
 
   // Status
   status: PermitStatus;
-  dateDebut: Date;
-  dateFin: Date;
 
   // Metadata
   creerPar: string;

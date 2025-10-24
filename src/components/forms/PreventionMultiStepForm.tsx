@@ -1,16 +1,12 @@
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useState } from 'react';
 import { z } from 'zod';
-import { useI18n } from '@/lib/i18n';
 import MultiStepForm from './MultiStepForm';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Select from '@/components/ui/Select';
 import Checkbox from '@/components/ui/Checkbox';
-import { AlertTriangle, AlertCircle, HardHat, User, MapPin, Clock, Calendar, FileText, Shield, Users, AlertOctagon } from 'lucide-react';
+import { AlertTriangle, AlertCircle, HardHat, User, MapPin, Calendar, FileText, Shield, Users, AlertOctagon } from 'lucide-react';
 
 // Define schemas for each step
 const step1Schema = z.object({
@@ -100,6 +96,7 @@ const step11Schema = z.object({
 });
 
 // Combine all schemas for final validation
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const preventionPlanSchema = step1Schema
   .merge(step2Schema)
   .merge(step3Schema)
@@ -165,19 +162,19 @@ const categoriesRisques = [
   }
 ];
 
-const RisquesIdentifies = ({ formData, updateFormData }) => {
-  const [selectedCategory, setSelectedCategory] = useState(null);
+const RisquesIdentifies = ({ formData, updateFormData }: { formData: Partial<PreventionPlan>; updateFormData: (data: Partial<PreventionPlan>) => void }) => {
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  const selectedRisques = (formData.risquesIdentifies || []).map(r => r.id);
+  const selectedRisques = (formData.risquesIdentifies || []).map((r: { id: string }) => r.id);
 
-  const handleSelectCategory = (categoryId) => {
+  const handleSelectCategory = (categoryId: string) => {
     setSelectedCategory(categoryId);
   };
 
-  const toggleRisque = (risqueId) => {
+  const toggleRisque = (risqueId: string) => {
     const currentRisques = formData.risquesIdentifies || [];
 
-    if (currentRisques.some(r => r.id === risqueId)) {
+    if (currentRisques.some((r: { id: string }) => r.id === risqueId)) {
       // remove
       const updated = currentRisques.filter(r => r.id !== risqueId);
       updateFormData({ risquesIdentifies: updated });
@@ -198,9 +195,9 @@ const RisquesIdentifies = ({ formData, updateFormData }) => {
         id: risqueId,
         categorie: categorieLabel,
         risque: risqueLabel,
-        gravite: 'faible',
-        probabilite: 'rare',
-        niveau: 'faible',
+        gravite: 'faible' as const,
+        probabilite: 'rare' as const,
+        niveau: 'faible' as const,
         mesures: '',
         mesuresExistentes: false,
       };
@@ -263,7 +260,7 @@ const RisquesIdentifies = ({ formData, updateFormData }) => {
                         type="checkbox"
                         id={`risque-${sousCategorie.id}`}
                         checked={selectedRisques.includes(sousCategorie.id)}
-                        onChange={(e) => toggleRisque(sousCategorie.id)}
+                        onChange={() => toggleRisque(sousCategorie.id)}
                         className="h-4 w-4 text-blue-600 rounded"
                       />
                       <label 
@@ -296,7 +293,7 @@ const RisquesIdentifies = ({ formData, updateFormData }) => {
                     type="button"
                     className="text-red-500 text-sm"
                     onClick={() => {
-                      const updated = (formData.risquesIdentifies || []).filter((_, i) => i !== index);
+                      const updated = (formData.risquesIdentifies || []).filter((_: unknown, i: number) => i !== index);
                       updateFormData({ risquesIdentifies: updated });
                     }}
                   >
@@ -374,9 +371,7 @@ const documentOptions = [
 ];
 
 export default function PreventionMultiStepForm({ onSubmit, onCancel, initialData = {} }: PreventionMultiStepFormProps) {
-  const { t } = useI18n();
   const [formData, setFormData] = useState<Partial<PreventionPlan>>(initialData);
-  const [currentStep, setCurrentStep] = useState(0);
 
   const updateFormData = (data: Partial<PreventionPlan>) => {
     setFormData(prev => ({
@@ -403,7 +398,6 @@ export default function PreventionMultiStepForm({ onSubmit, onCancel, initialDat
             name="entreprisePrestataire"
             label="Nom de l'entreprise"
             required
-            icon={User}
           />
           <Input
             name="siret"
@@ -770,8 +764,8 @@ export default function PreventionMultiStepForm({ onSubmit, onCancel, initialDat
                   <Checkbox
                     id={`doc-${value}`}
                     checked={(formData.documentsFournis || []).includes(value)}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
+                onChange={(event) => {
+                      const checked = event.target.checked;
                       const updated = checked
                         ? [...(formData.documentsFournis || []), value]
                         : (formData.documentsFournis || []).filter((v) => v !== value);

@@ -1,6 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { useToastStore } from '@/store/toastStore';
-import { useI18n } from '@/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { ArrowLeft } from 'lucide-react';
@@ -77,31 +76,6 @@ const preventionPlanSchema = z.object({
     message: 'Vous devez accepter les conditions',
   }),
 
-  // Step 8: Procédures d'Urgence
-  proceduresUrgence: z.object({
-    planEvacuation: z.boolean(),
-    numerosUrgence: z.array(z.string()).min(1, 'Au moins un numéro d\'urgence requis'),
-    secouristePresent: z.boolean(),
-    nomSecouriste: z.string().optional(),
-    posteSecours: z.string().min(1, 'Poste de secours requis'),
-    hopitalReference: z.string().min(1, 'Hôpital de référence requis'),
-  }),
-
-  // Step 9: Surveillance
-  surveillance: z.object({
-    controlesReguliers: z.boolean(),
-    frequenceControles: z.string().min(1, 'Fréquence des contrôles requise'),
-    responsableControle: z.string().min(1, 'Responsable du contrôle requis'),
-    pointsControle: z.array(z.string()).min(1, 'Au moins un point de contrôle requis'),
-  }),
-
-  // Step 10: Attestations
-  attestations: z.object({
-    assuranceResponsabilite: z.boolean(),
-    attestationFormation: z.boolean(),
-    certificatHabilitation: z.boolean(),
-    autres: z.array(z.string()).optional(),
-  })
 });
 
 // Define the form type from the schema
@@ -111,10 +85,9 @@ export default function PreventionFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToast } = useToastStore();
-  const { t } = useI18n();
   
   const isEditing = Boolean(id);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [, setIsSubmitting] = useState(false);
   
   const form = useForm<PreventionPlan>({
     resolver: zodResolver(preventionPlanSchema),
@@ -182,20 +155,17 @@ export default function PreventionFormPage() {
       //   ? await updatePlanPrevention(id, data)
       //   : await createPlanPrevention(data);
       
-      addToast({
-        type: 'success',
-        message: isEditing 
+      addToast(
+        isEditing 
           ? 'Plan de prévention mis à jour avec succès'
           : 'Plan de prévention créé avec succès',
-      });
+        'success'
+      );
       
       navigate('/prevention');
     } catch (error) {
       console.error('Error submitting prevention plan:', error);
-      addToast({
-        type: 'error',
-        message: 'Une erreur est survenue lors de la soumission du formulaire',
-      });
+      addToast('Une erreur est survenue lors de la soumission du formulaire', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -227,23 +197,9 @@ export default function PreventionFormPage() {
         </CardHeader>
         <CardContent>
           <PreventionMultiStepForm 
-            form={form}
-            onSubmit={onSubmit} 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            onSubmit={onSubmit as unknown as (data: any) => void} 
             onCancel={handleCancel}
-            isSubmitting={isSubmitting}
-            steps={[
-              { label: 'Entreprise' },
-              { label: 'Maître d\'Ouvrage' },
-              { label: 'Localisation' },
-              { label: 'Description des Travaux' },
-              { label: 'Planning' },
-              { label: 'Risques Identifiés' },
-              { label: 'Équipements de Sécurité' },
-              { label: 'Consignes de Sécurité' },
-              { label: 'Formation et Compétences' },
-              { label: 'Documents et Validation' },
-              { label: 'Confirmation' }
-            ]}
           />
         </CardContent>
       </Card>

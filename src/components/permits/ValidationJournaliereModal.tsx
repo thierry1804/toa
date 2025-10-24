@@ -3,13 +3,12 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { usePermitStore } from '@/store/permitStore';
-import { useAuthStore } from '@/store/authStore';
 import { useToastStore } from '@/store/toastStore';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { Calendar, Plus, X, Wind, User, CheckCircle } from 'lucide-react';
-import { formatDate, formatDateTime } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import type { ValidationJournaliere } from '@/types';
 
 interface ValidationJournaliereModalProps {
@@ -39,7 +38,6 @@ export default function ValidationJournaliereModal({
   validations,
 }: ValidationJournaliereModalProps) {
   const { updatePermisHauteur } = usePermitStore();
-  const { user } = useAuthStore();
   const { success, error } = useToastStore();
   const [isAdding, setIsAdding] = useState(false);
 
@@ -96,7 +94,7 @@ export default function ValidationJournaliereModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="xl">
+    <Modal isOpen={isOpen} onClose={onClose} title="Validation Journalière" size="xl">
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div>

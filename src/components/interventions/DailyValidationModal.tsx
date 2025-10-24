@@ -5,7 +5,7 @@ import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Checkbox from '@/components/ui/Checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { CheckCircle2, AlertCircle, Camera, FileText } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Camera } from 'lucide-react';
 import type { ValidationInterventionJournaliere } from '@/types';
 
 interface DailyValidationModalProps {
@@ -129,7 +129,7 @@ export default function DailyValidationModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Validation journalière" size="large">
+    <Modal isOpen={isOpen} onClose={onClose} title="Validation journalière" size="xl">
       <div className="space-y-6">
         {/* Header */}
         <div className="bg-primary-50 p-4 rounded-lg">

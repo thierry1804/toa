@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import Checkbox from '@/components/ui/Checkbox';
 import Input from '@/components/ui/Input';
@@ -99,7 +98,7 @@ export default function RisquesIdentifiesSection({
     onDetailsRisquesChange(detailsRisques.filter((r) => r.id !== id));
   };
 
-  const updateRisque = (id: string, field: keyof DetailRisque, value: any) => {
+  const updateRisque = (id: string, field: keyof DetailRisque, value: string | 'toa' | 'prestataire') => {
     onDetailsRisquesChange(
       detailsRisques.map((r) => (r.id === id ? { ...r, [field]: value } : r))
     );
@@ -642,7 +641,7 @@ export default function RisquesIdentifiesSection({
               </div>
 
               {/* Lignes du tableau */}
-              {detailsRisques.map((risque, index) => (
+              {detailsRisques.map((risque) => (
                 <div
                   key={risque.id}
                   className="grid grid-cols-12 gap-4 p-3 border border-gray-200 rounded-lg hover:bg-gray-50"

@@ -1,15 +1,14 @@
 import { useNavigate } from 'react-router-dom';
 import { usePermitStore } from '@/store/permitStore';
-import { useAuthStore } from '@/store/authStore';
 import { useToastStore } from '@/store/toastStore';
 import PermitHauteurForm from '@/components/forms/PermitHauteurForm';
 
 export default function PermitHauteurFormPage() {
   const navigate = useNavigate();
   const { addPermisHauteur } = usePermitStore();
-  const { user } = useAuthStore();
   const { success, error } = useToastStore();
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleComplete = async (data: any) => {
     try {
       addPermisHauteur(data);

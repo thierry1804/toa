@@ -4,7 +4,7 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Textarea from '@/components/ui/Textarea';
 import Button from '@/components/ui/Button';
-import { Plus, Trash2, AlertTriangle } from 'lucide-react';
+import { Trash2, AlertTriangle } from 'lucide-react';
 
 // Types pour les risques structurés
 export interface RisqueDetailComplet {
@@ -139,7 +139,7 @@ export default function RisqueDetailForm({ risques, onRisquesChange }: RisqueDet
         setCurrentRisque((prev) => ({ ...prev, niveauRisque: niveauCalcule }));
       }
     }
-  }, [currentRisque.niveauGravite, currentRisque.probabilite]);
+  }, [currentRisque.niveauGravite, currentRisque.probabilite, currentRisque.niveauRisque]);
 
   // Mettre à jour les sous-catégories quand la catégorie principale change
   useEffect(() => {
@@ -156,7 +156,7 @@ export default function RisqueDetailForm({ risques, onRisquesChange }: RisqueDet
     } else {
       setSousCategoriesDisponibles([]);
     }
-  }, [currentRisque.categoriePrincipale]);
+  }, [currentRisque.categoriePrincipale, currentRisque.sousCategorie]);
 
   const calculerNiveauRisque = (
     gravite: string,
@@ -313,7 +313,7 @@ export default function RisqueDetailForm({ risques, onRisquesChange }: RisqueDet
                 ]}
                 value={currentRisque.categoriePrincipale}
                 onChange={(e) =>
-                  setCurrentRisque({ ...currentRisque, categoriePrincipale: e.target.value as any })
+                  setCurrentRisque({ ...currentRisque, categoriePrincipale: e.target.value as 'environnement' | 'social' | 'sante_securite' | 'infrastructure' | '' })
                 }
                 required
               />
@@ -379,7 +379,7 @@ export default function RisqueDetailForm({ risques, onRisquesChange }: RisqueDet
                 ]}
                 value={currentRisque.niveauGravite}
                 onChange={(e) =>
-                  setCurrentRisque({ ...currentRisque, niveauGravite: e.target.value as any })
+                  setCurrentRisque({ ...currentRisque, niveauGravite: e.target.value as 'faible' | 'moyen' | 'eleve' | 'critique' | '' })
                 }
                 required
               />
@@ -394,7 +394,7 @@ export default function RisqueDetailForm({ risques, onRisquesChange }: RisqueDet
                 ]}
                 value={currentRisque.probabilite}
                 onChange={(e) =>
-                  setCurrentRisque({ ...currentRisque, probabilite: e.target.value as any })
+                  setCurrentRisque({ ...currentRisque, probabilite: e.target.value as 'faible' | 'moyenne' | 'elevee' | '' })
                 }
                 required
               />
@@ -461,7 +461,7 @@ export default function RisqueDetailForm({ risques, onRisquesChange }: RisqueDet
                 onChange={(e) =>
                   setCurrentRisque({
                     ...currentRisque,
-                    responsableMiseEnOeuvre: e.target.value as any,
+                    responsableMiseEnOeuvre: e.target.value as 'toa' | 'prestataire' | '',
                   })
                 }
                 required
@@ -529,7 +529,7 @@ export default function RisqueDetailForm({ risques, onRisquesChange }: RisqueDet
                             risque.categoriePrincipale
                           )}`}
                         >
-                          {CATEGORIES_RISQUES[risque.categoriePrincipale]?.label || risque.categoriePrincipale}
+                          {risque.categoriePrincipale && CATEGORIES_RISQUES[risque.categoriePrincipale]?.label || risque.categoriePrincipale}
                         </span>
                         <span
                           className={`px-3 py-1 rounded-lg text-xs font-bold border-2 ${getNiveauRisqueColor(

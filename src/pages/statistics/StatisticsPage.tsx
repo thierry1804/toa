@@ -39,10 +39,10 @@ export default function StatisticsPage() {
   const plansStats = useMemo(() => {
     const total = plansPrevention.length;
     const enAttente = plansPrevention.filter(
-      (p) => p.status === 'en_attente_validation_chef' || p.status === 'en_attente_validation_hse'
+      (p) => p.status === 'brouillon'
     ).length;
     const valides = plansPrevention.filter((p) => p.status === 'valide').length;
-    const refuses = plansPrevention.filter((p) => p.status === 'refuse').length;
+    const refuses = 0; // No 'refuse' status in PlanPrevention type
 
     return { total, enAttente, valides, refuses };
   }, [plansPrevention]);

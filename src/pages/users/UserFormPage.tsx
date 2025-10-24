@@ -18,7 +18,7 @@ export default function UserFormPage() {
   const { users, addUser, updateUser, getUserById } = useUserStore();
   const { canAccessFeature } = useAuthStore();
   const { t } = useI18n();
-  const { addToast } = useToastStore();
+  const { success, error } = useToastStore();
 
   const isEditMode = !!id;
   const existingUser = isEditMode ? getUserById(id) : null;
@@ -57,12 +57,12 @@ export default function UserFormPage() {
   useEffect(() => {
     if (isEditMode && !canAccessFeature('edit_users')) {
       navigate('/users');
-      addToast('error', 'Vous n\'avez pas la permission de modifier les utilisateurs');
+      error('Vous n\'avez pas la permission de modifier les utilisateurs');
     } else if (!isEditMode && !canAccessFeature('create_users')) {
       navigate('/users');
-      addToast('error', 'Vous n\'avez pas la permission de créer des utilisateurs');
+      error('Vous n\'avez pas la permission de créer des utilisateurs');
     }
-  }, [isEditMode, canAccessFeature, navigate, addToast]);
+  }, [isEditMode, canAccessFeature, navigate, error]);
 
   const roleOptions = [
     { value: 'super_admin', label: t('roles.super_admin') },
@@ -144,7 +144,7 @@ export default function UserFormPage() {
     e.preventDefault();
 
     if (!validateForm()) {
-      addToast('error', 'Veuillez corriger les erreurs du formulaire');
+      error('Veuillez corriger les erreurs du formulaire');
       return;
     }
 
@@ -163,10 +163,10 @@ export default function UserFormPage() {
 
     if (isEditMode) {
       updateUser(id, userData);
-      addToast('success', 'Utilisateur modifié avec succès');
+      success('Utilisateur modifié avec succès');
     } else {
       addUser(userData);
-      addToast('success', 'Utilisateur créé avec succès');
+      success('Utilisateur créé avec succès');
     }
 
     navigate('/users');

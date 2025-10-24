@@ -24,7 +24,7 @@ export default function PreventionListPage() {
       searchQuery === '' ||
       plan.reference.toLowerCase().includes(searchQuery.toLowerCase()) ||
       plan.entreprisePrestataire.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      plan.codeSite.toLowerCase().includes(searchQuery.toLowerCase());
+      (plan.codeSite || plan.nomSite).toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchStatus = statusFilter === 'all' || plan.status === statusFilter;
 
@@ -158,7 +158,7 @@ export default function PreventionListPage() {
                           </div>
                           <div>
                             <p className="font-semibold text-gray-900">{plan.reference}</p>
-                            <p className="text-xs text-gray-500">{plan.codeSite}</p>
+                            <p className="text-Solution text-gray-500">{plan.codeSite || plan.nomSite}</p>
                           </div>
                         </div>
                         {getStatusBadge(plan.status)}

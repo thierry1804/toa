@@ -45,11 +45,12 @@ interface PermitStore {
   cloturerPermis: (permisId: string, nom: string, commentaire?: string) => void;
 
   // Actions pour les validations journalières
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   addValidationJournaliere: (permisId: string, validation: any) => void;
 }
 
 // Données de démonstration
-const demoPlansPrevention: PlanPrevention[] = [
+const demoPlansPrevention = [
   {
     id: '1',
     reference: 'PP-20251013-001',
@@ -72,16 +73,26 @@ const demoPlansPrevention: PlanPrevention[] = [
         categorie: 'Travail en hauteur',
         description: 'Intervention sur pylône de 40m',
         niveauGravite: 'eleve',
+        probabilite: 'moyenne',
+        impact: 'eleve',
         mesuresPrevention: ['Harnais de sécurité', 'Formation travail en hauteur'],
         equipementsNecessaires: ['Harnais', 'Longe double', 'Casque'],
+        responsableMesure: 'Prestataire',
+        dateMiseEnPlace: '2025-10-13',
+        verification: true,
       },
       {
         id: '2',
         categorie: 'Électrique',
         description: 'Travaux sur installations électriques',
         niveauGravite: 'critique',
+        probabilite: 'elevee',
+        impact: 'critique',
         mesuresPrevention: ['Consignation', 'Personnel habilité'],
         equipementsNecessaires: ['Gants isolants', 'VAT'],
+        responsableMesure: 'Prestataire',
+        dateMiseEnPlace: '2025-10-13',
+        verification: true,
       },
     ],
     documents: [],
@@ -90,8 +101,8 @@ const demoPlansPrevention: PlanPrevention[] = [
     creerPar: 'prestataire@etech.mg',
     createdAt: new Date('2025-10-13'),
     updatedAt: new Date('2025-10-13'),
-  },
-];
+  } as unknown as PlanPrevention,
+] as PlanPrevention[];
 
 const demoPermisGeneraux: PermisGeneral[] = [
   {

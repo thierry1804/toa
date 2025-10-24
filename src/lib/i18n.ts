@@ -332,7 +332,8 @@ class I18n {
 
     for (const k of keys) {
       if (value && typeof value === 'object') {
-        value = value[k];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        value = (value as any)[k];
       } else {
         return key; // Retourne la clé si la traduction n'existe pas
       }

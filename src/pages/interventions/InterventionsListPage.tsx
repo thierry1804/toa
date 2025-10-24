@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useInterventionStore } from '@/store/interventionStore';
 import { useAuthStore } from '@/store/authStore';
-import { useI18n } from '@/lib/i18n';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -18,7 +17,6 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock,
-  Wifi,
   WifiOff,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
@@ -27,7 +25,6 @@ import type { InterventionStatus } from '@/types';
 export default function InterventionsListPage() {
   const { interventions } = useInterventionStore();
   const { user, canAccessFeature } = useAuthStore();
-  const { t } = useI18n();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -129,7 +126,7 @@ export default function InterventionsListPage() {
     zonesEnclavees: filteredInterventions.filter((i) => i.zoneEnclavee).length,
   };
 
-  const calculateAvancement = (intervention: any) => {
+  const calculateAvancement = (intervention: { validationsJournalieres: Array<{ avancementPourcentage?: number }> }) => {
     if (intervention.validationsJournalieres.length === 0) return 0;
     const latestValidation =
       intervention.validationsJournalieres[intervention.validationsJournalieres.length - 1];

@@ -269,7 +269,7 @@ export default function PermitDetailPage() {
                 <p className="font-semibold text-gray-900">{planPrevention.reference}</p>
                 <p className="text-sm text-gray-600 mt-1">{planPrevention.natureIntervention}</p>
                 <p className="text-xs text-gray-500 mt-1">
-                  {planPrevention.nomSite} ({planPrevention.codeSite})
+                  {planPrevention.nomSite} ({planPrevention.codeSite || planPrevention.region})
                 </p>
                 <p className="text-xs text-gray-500">
                   {planPrevention.risques.length} risque(s) identifié(s)

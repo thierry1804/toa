@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useInterventionStore } from '@/store/interventionStore';
 import { useAuthStore } from '@/store/authStore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -21,15 +21,12 @@ import {
   Eye,
   WifiOff,
   XCircle,
-  Download,
-  Edit,
 } from 'lucide-react';
 import { formatDate, cn } from '@/lib/utils';
 import type { ValidationInterventionJournaliere, Take5Record } from '@/types';
 
 export default function InterventionDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const {
     interventions,
     addValidationJournaliere,
@@ -290,7 +287,7 @@ export default function InterventionDetailPage() {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id as 'overview' | 'validations' | 'take5' | 'documents')}
                 className={cn(
                   'flex items-center gap-2 px-4 py-3 border-b-2 font-medium transition-colors',
                   activeTab === tab.id
@@ -411,7 +408,7 @@ export default function InterventionDetailPage() {
             intervention.validationsJournalieres
               .slice()
               .reverse()
-              .map((validation, index) => (
+              .map((validation) => (
                 <Card key={validation.id}>
                   <CardHeader>
                     <div className="flex items-center justify-between">

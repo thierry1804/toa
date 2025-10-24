@@ -1,15 +1,14 @@
 import { useNavigate } from 'react-router-dom';
 import { usePermitStore } from '@/store/permitStore';
-import { useAuthStore } from '@/store/authStore';
 import { useToastStore } from '@/store/toastStore';
 import PermitElectriqueForm from '@/components/forms/PermitElectriqueForm';
 
 export default function PermitElectriqueFormPage() {
   const navigate = useNavigate();
   const { addPermisElectrique } = usePermitStore();
-  const { user } = useAuthStore();
   const { success, error } = useToastStore();
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleComplete = async (data: any) => {
     try {
       addPermisElectrique(data);

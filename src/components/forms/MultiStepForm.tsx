@@ -7,26 +7,29 @@ interface Step {
   id: string;
   title: string;
   description?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   component: ReactNode | ((formData: any, updateFormData: (data: any) => void) => ReactNode);
   isValid?: boolean;
 }
 
 interface MultiStepFormProps {
   steps: Step[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onComplete: (data: any) => void;
   onCancel?: () => void;
   title: string;
   description?: string;
   submitLabel?: string;
   loading?: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   formData?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   updateFormData?: (data: any) => void;
 }
 
 export default function MultiStepForm({
   steps,
   onComplete,
-  onCancel,
   title,
   description,
   submitLabel = 'Soumettre',

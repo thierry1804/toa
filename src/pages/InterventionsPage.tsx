@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
-import { Search, Filter, Plus, Calendar, Clock, User, HardHat, AlertTriangle, Wrench } from 'lucide-react';
+import { Search, Plus, Calendar, User, HardHat, AlertTriangle, Wrench } from 'lucide-react';
 import Badge from '@/components/ui/Badge';
 
 type InterventionStatus = 'planned' | 'in_progress' | 'completed' | 'cancelled';

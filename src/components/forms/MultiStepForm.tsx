@@ -76,15 +76,22 @@ export default function MultiStepForm({
         <div className="flex items-start sm:items-center justify-between min-w-max">
           {steps.map((step, index) => (
             <div key={step.id} className="flex flex-col items-center px-1 sm:px-2">
-              <div className="flex items-center">
+              <div className="flex items-center h-8">
                 <div
-                  className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full text-sm sm:text-base font-medium transition-colors duration-200 ${
+                  className={`flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full text-xs sm:text-sm font-medium transition-colors duration-200 ${
                     index < currentStep
                       ? 'bg-green-500 text-white'
                       : index === currentStep
                       ? 'bg-primary-500 text-white'
                       : 'bg-gray-200 text-gray-600'
                   }`}
+                  style={{
+                    minWidth: '1.75rem',
+                    lineHeight: '1.75rem',
+                    textAlign: 'center',
+                    position: 'relative',
+                    top: '0.125rem' // Ajustement fin pour l'alignement
+                  }}
                 >
                   {index < currentStep ? (
                     <Check className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -96,17 +103,21 @@ export default function MultiStepForm({
                   <div 
                     className={`hidden xs:block w-8 sm:w-12 md:w-16 h-0.5 mx-1 sm:mx-2 ${
                       index < currentStep ? 'bg-green-500' : 'bg-gray-200'
-                    }`} 
+                    }`}
+                    style={{
+                      position: 'relative',
+                      top: '0.125rem' // Ajustement fin pour l'alignement
+                    }}
                   />
                 )}
               </div>
-              <div className="mt-2 text-center">
-                <p className={`text-xs sm:text-sm font-medium whitespace-nowrap ${
+              <div className="mt-1.5 text-center">
+                <p className={`text-[10px] xs:text-xs font-medium leading-tight ${
                   index <= currentStep ? 'text-gray-900' : 'text-gray-500'
                 }`}>
                   {step.title.split(' ').map((word, i) => (
                     <span key={i} className="block xs:inline">
-                      {word}{' '}
+                      {word}
                     </span>
                   ))}
                 </p>

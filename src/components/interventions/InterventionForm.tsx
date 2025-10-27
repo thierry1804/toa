@@ -58,7 +58,7 @@ export default function InterventionForm() {
       id: `INT-${Date.now()}`,
       dateDebut: new Date(formData.dateDebut),
       dateFin: new Date(formData.dateFin),
-      status: 'planifiee',
+      status: 'planifiee' as const, // Using 'as const' to ensure type safety
       validationsJournalieres: [],
       take5Records: [],
       documentsProgres: [],

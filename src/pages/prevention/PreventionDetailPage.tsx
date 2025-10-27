@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { usePermitStore } from '@/store/permitStore';
 import { usePreventionStore } from '@/store/preventionStore';
 import { useAuthStore } from '@/store/authStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import ValidationChefModal from '@/components/prevention/ValidationChefModal';
 import ValidationHSEModal from '@/components/prevention/ValidationHSEModal';
-import { ArrowLeft, Edit, Printer, Download, Shield, AlertTriangle, Clock, MapPin, Building, FileText, CheckCircle, User, Send } from 'lucide-react';
+import { ArrowLeft, Edit, Printer, Download, Shield, AlertTriangle, Clock, MapPin, Building, FileText, CheckCircle, Send } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
 export default function PreventionDetailPage() {

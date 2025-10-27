@@ -489,7 +489,20 @@ export default function DailyValidationModal({
                 <ControleJournalierElectrique
                   permisId={permisAssocie.id}
                   onSubmit={(data) => {
-                    onControlePermis?.(data);
+                    const controleData: ControleJournalierPermis = {
+                      id: `controle-${Date.now()}`,
+                      permisId: permisAssocie.id,
+                      createdAt: new Date(),
+                      date: new Date(data.date),
+                      codeSite: data.codeSite,
+                      intervenants: data.intervenants,
+                      confirmationMesures: data.confirmationMesures,
+                      signatureDemandeur: data.signatureDemandeur,
+                      signatureIntervenant: data.signatureIntervenant,
+                      signatureClotureDemandeur: data.signatureClotureDemandeur,
+                      signatureClotureIntervenant: data.signatureClotureIntervenant,
+                    };
+                    onControlePermis?.(controleData);
                     setShowControlePermis(false);
                   }}
                   onCancel={() => setShowControlePermis(false)}
@@ -498,7 +511,20 @@ export default function DailyValidationModal({
                 <ControleJournalierHauteur
                   permisId={permisAssocie.id}
                   onSubmit={(data) => {
-                    onControlePermis?.(data);
+                    const controleData: ControleJournalierPermis = {
+                      id: `controle-${Date.now()}`,
+                      permisId: permisAssocie.id,
+                      createdAt: new Date(),
+                      date: new Date(data.date),
+                      codeSite: data.codeSite,
+                      intervenants: data.intervenants,
+                      confirmationMesures: data.confirmationMesures,
+                      signatureDemandeur: data.signatureDemandeur,
+                      signatureIntervenant: data.signatureIntervenant,
+                      signatureClotureDemandeur: data.signatureClotureDemandeur,
+                      signatureClotureIntervenant: data.signatureClotureIntervenant,
+                    };
+                    onControlePermis?.(controleData);
                     setShowControlePermis(false);
                   }}
                   onCancel={() => setShowControlePermis(false)}

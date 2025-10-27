@@ -3,7 +3,7 @@ import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Textarea from '@/components/ui/Textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { CheckCircle2, XCircle, FileText, User, Calendar } from 'lucide-react';
+import { CheckCircle2, XCircle, FileText } from 'lucide-react';
 import type { PlanPrevention } from '@/types/prevention';
 
 interface ValidationChefModalProps {
@@ -49,7 +49,7 @@ export default function ValidationChefModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} size="xl">
+    <Modal isOpen={isOpen} onClose={handleClose} size="xl" title="Validation Chef de Projet">
       <div className="max-h-[90vh] overflow-y-auto">
         <div className="space-y-6">
           {/* En-tête */}

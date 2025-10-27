@@ -154,11 +154,10 @@ const demoPlans: PlanPrevention[] = [
       certificatHabilitation: true,
       autres: [],
     },
-    validation: {
-      validePar: 'Marie Rasoamanana',
+    validationChef: {
+      valideePar: 'Marie Rasoamanana',
       dateValidation: new Date('2025-10-01'),
       commentaires: 'Plan validé conformément aux procédures',
-      signature: '',
     },
     suivi: {
       incidents: [],
@@ -310,11 +309,10 @@ const demoPlans: PlanPrevention[] = [
       certificatHabilitation: true,
       autres: [],
     },
-    validation: {
-      validePar: 'David Rajoelina',
+    validationChef: {
+      valideePar: 'David Rajoelina',
       dateValidation: new Date('2025-10-15'),
       commentaires: 'Plan validé pour travaux en hauteur',
-      signature: '',
     },
     suivi: {
       incidents: [],

@@ -430,7 +430,7 @@ export default function PermitDetailPage() {
         isOpen={controleModalOpen}
         onClose={() => setControleModalOpen(false)}
         onSubmit={handleControleSubmit}
-        permisType={permis.type as 'travaux_electrique' | 'travaux_hauteur'}
+        permisType={permis.travauxRisques.travauxElectrique ? 'travaux_electrique' : 'travaux_hauteur'}
         permisId={id!}
       />
     </div>

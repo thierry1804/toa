@@ -142,14 +142,14 @@ export default function PermitElectriqueForm({ onComplete, onCancel, initialData
             label="Référence du plan de prévention *"
             {...register('planPreventionId')}
             error={errors.planPreventionId?.message}
-          >
-            <option value="">Sélectionnez un plan de prévention</option>
-            {plansActifs.map((plan) => (
-              <option key={plan.id} value={plan.id}>
-                {plan.reference} - {plan.nomSite}
-              </option>
-            ))}
-          </Select>
+            options={[
+              { value: '', label: 'Sélectionnez un plan de prévention' },
+              ...plansActifs.map((plan) => ({
+                value: plan.id,
+                label: `${plan.reference} - ${plan.nomSite}`
+              }))
+            ]}
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import Modal from '@/components/ui/Modal';
 import ControleJournalierElectrique from './ControleJournalierElectrique';
 import ControleJournalierHauteur from './ControleJournalierHauteur';
@@ -55,7 +54,7 @@ export default function ControleJournalierModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="xl">
+    <Modal isOpen={isOpen} onClose={onClose} size="xl" title="Contrôle Journalier">
       <div className="max-h-[90vh] overflow-y-auto">
         {permisType === 'travaux_electrique' ? (
           <ControleJournalierElectrique

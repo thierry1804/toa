@@ -25,7 +25,6 @@ interface ControleJournalierHauteurData {
 }
 
 export default function ControleJournalierHauteur({
-  permisId,
   onSubmit,
   onCancel,
 }: ControleJournalierHauteurProps) {

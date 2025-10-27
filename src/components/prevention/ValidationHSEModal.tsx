@@ -93,7 +93,7 @@ export default function ValidationHSEModal({
   const conformiteGenerale = verificationsConformite.every(v => v.conforme);
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} size="xl">
+    <Modal isOpen={isOpen} onClose={handleClose} size="xl" title="Validation HSE">
       <div className="max-h-[90vh] overflow-y-auto">
         <div className="space-y-6">
           {/* En-tête */}

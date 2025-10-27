@@ -24,7 +24,6 @@ interface ControleJournalierData {
 }
 
 export default function ControleJournalierElectrique({
-  permisId,
   onSubmit,
   onCancel,
 }: ControleJournalierElectriqueProps) {

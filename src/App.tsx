@@ -8,6 +8,7 @@ import PermitFormPage from './pages/permits/PermitFormPage';
 import PermitDetailPage from './pages/permits/PermitDetailPage';
 import PreventionListPage from './pages/prevention/PreventionListPage';
 import PreventionFormPage from './pages/prevention/PreventionFormPage';
+import PreventionDetailPage from './pages/prevention/PreventionDetailPage';
 import InterventionsListPage from './pages/interventions/InterventionsListPage';
 import InterventionDetailPage from './pages/interventions/InterventionDetailPage';
 import InterventionFormPage from './pages/interventions/InterventionFormPage';
@@ -40,6 +41,7 @@ function App() {
             <Route path="permits/:id/edit" element={<PermitFormPage />} />
             <Route path="prevention" element={<PreventionListPage />} />
             <Route path="prevention/new" element={<PreventionFormPage />} />
+            <Route path="prevention/:id" element={<PreventionDetailPage />} />
             <Route path="prevention/:id/edit" element={<PreventionFormPage />} />
             <Route path="interventions" element={<InterventionsListPage />} />
             <Route path="interventions/new" element={<InterventionFormPage />} />

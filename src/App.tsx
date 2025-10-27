@@ -10,6 +10,7 @@ import PreventionListPage from './pages/prevention/PreventionListPage';
 import PreventionFormPage from './pages/prevention/PreventionFormPage';
 import InterventionsListPage from './pages/interventions/InterventionsListPage';
 import InterventionDetailPage from './pages/interventions/InterventionDetailPage';
+import InterventionFormPage from './pages/interventions/InterventionFormPage';
 import UsersListPage from './pages/users/UsersListPage';
 import UserFormPage from './pages/users/UserFormPage';
 import StatisticsPage from './pages/statistics/StatisticsPage';
@@ -41,6 +42,7 @@ function App() {
             <Route path="prevention/new" element={<PreventionFormPage />} />
             <Route path="prevention/:id/edit" element={<PreventionFormPage />} />
             <Route path="interventions" element={<InterventionsListPage />} />
+            <Route path="interventions/new" element={<InterventionFormPage />} />
             <Route path="interventions/:id" element={<InterventionDetailPage />} />
             <Route path="users" element={<UsersListPage />} />
             <Route path="users/new" element={<UserFormPage />} />

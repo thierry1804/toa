@@ -29,6 +29,12 @@ const step3Schema = z.object({
   codePostal: z.string().regex(/^[0-9]{5}$/, 'Code postal invalide'),
   ville: z.string().min(1, 'Ville requise'),
   coordonneesGPS: z.string().optional(),
+  fokontany: z.string().min(1, 'Fokontany requis'),
+  commune: z.string().min(1, 'Commune requise'),
+  district: z.string().min(1, 'District requis'),
+  region: z.string().min(1, 'Région requise'),
+  situationGeographique: z.enum(['en_ville', 'rurale', 'sur_montagne', 'autre']),
+  situationGeographiqueAutre: z.string().optional(),
 });
 
 const step4Schema = z.object({

@@ -76,14 +76,17 @@ export default function MultiStepForm({
         <div className="flex items-start w-full">
           {steps.map((step, index) => (
             <React.Fragment key={step.id}>
-              <div className="flex flex-col items-center relative z-10 flex-1 min-w-0 px-1">
-                <div 
-                  className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-colors duration-200 ${
+              <div 
+                className="flex flex-col items-center relative z-10 flex-1 min-w-0 px-1 cursor-pointer"
+                onClick={() => setCurrentStep(index)}
+              >
+                <div
+                  className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-colors duration-200 hover:scale-105 ${
                     index < currentStep
-                      ? 'bg-green-500 text-white'
+                    ? 'bg-green-500 text-white hover:bg-green-600'
                       : index === currentStep
-                      ? 'bg-primary-500 text-white'
-                      : 'bg-gray-200 text-gray-600'
+                      ? 'bg-primary-500 text-white hover:bg-primary-600'
+                      : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                   }`}
                 >
                   {index < currentStep ? (

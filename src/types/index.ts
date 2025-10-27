@@ -843,6 +843,29 @@ export interface DocumentProgres {
   uploadePar: string;
 }
 
+// Types pour le contrôle journalier des permis
+export interface ControleJournalierPermis {
+  id: string;
+  permisId: string;
+  date: Date;
+  codeSite: string;
+  intervenants: string[];
+  
+  // Commencement
+  confirmationMesures: boolean;
+  signatureDemandeur: string;
+  signatureIntervenant: string;
+  
+  // Clôture
+  signatureClotureDemandeur: string;
+  signatureClotureIntervenant: string;
+  
+  // Spécifique hauteur
+  vitesseVent?: number; // km/h
+  
+  createdAt: Date;
+}
+
 export interface Incident {
   id: string;
   date: Date;

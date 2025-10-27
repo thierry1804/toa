@@ -5,8 +5,10 @@ import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Checkbox from '@/components/ui/Checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { CheckCircle2, AlertCircle, Camera } from 'lucide-react';
-import type { ValidationInterventionJournaliere } from '@/types';
+import ControleJournalierElectrique from '@/components/permits/ControleJournalierElectrique';
+import ControleJournalierHauteur from '@/components/permits/ControleJournalierHauteur';
+import { CheckCircle2, AlertCircle, Camera, FileText } from 'lucide-react';
+import type { ValidationInterventionJournaliere, ControleJournalierPermis } from '@/types';
 
 interface DailyValidationModalProps {
   isOpen: boolean;
@@ -15,6 +17,11 @@ interface DailyValidationModalProps {
   interventionRef: string;
   codeSite: string;
   initialData?: Partial<ValidationInterventionJournaliere>;
+  permisAssocie?: {
+    id: string;
+    type: 'travaux_electrique' | 'travaux_hauteur';
+  };
+  onControlePermis?: (data: ControleJournalierPermis) => void;
 }
 
 export default function DailyValidationModal({
@@ -24,7 +31,10 @@ export default function DailyValidationModal({
   interventionRef,
   codeSite,
   initialData,
+  permisAssocie,
+  onControlePermis,
 }: DailyValidationModalProps) {
+  const [showControlePermis, setShowControlePermis] = useState(false);
   const [formData, setFormData] = useState<Partial<ValidationInterventionJournaliere>>({
     date: initialData?.date || new Date(),
     heureDebut: initialData?.heureDebut || '',
@@ -438,6 +448,65 @@ export default function DailyValidationModal({
             </div>
           </CardContent>
         </Card>
+
+        {/* Contrôle journalier du permis associé */}
+        {permisAssocie && !showControlePermis && (
+          <Card className="bg-blue-50 border-blue-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-blue-900">
+                <FileText className="h-5 w-5" />
+                Contrôle Journalier du Permis
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-blue-700 mb-4">
+                Un permis {permisAssocie.type === 'travaux_electrique' ? 'électrique' : 'de travail en hauteur'} est associé à cette intervention.
+                Voulez-vous effectuer le contrôle journalier ?
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => setShowControlePermis(true)}
+                className="border-blue-300 text-blue-700 hover:bg-blue-100"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Effectuer le contrôle journalier
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Formulaire de contrôle journalier du permis */}
+        {permisAssocie && showControlePermis && (
+          <Card className="bg-blue-50 border-blue-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-blue-900">
+                <FileText className="h-5 w-5" />
+                Contrôle Journalier du Permis {permisAssocie.type === 'travaux_electrique' ? 'Électrique' : 'de Travail en Hauteur'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {permisAssocie.type === 'travaux_electrique' ? (
+                <ControleJournalierElectrique
+                  permisId={permisAssocie.id}
+                  onSubmit={(data) => {
+                    onControlePermis?.(data);
+                    setShowControlePermis(false);
+                  }}
+                  onCancel={() => setShowControlePermis(false)}
+                />
+              ) : (
+                <ControleJournalierHauteur
+                  permisId={permisAssocie.id}
+                  onSubmit={(data) => {
+                    onControlePermis?.(data);
+                    setShowControlePermis(false);
+                  }}
+                  onCancel={() => setShowControlePermis(false)}
+                />
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Validation finale */}
         <Card className="bg-green-50 border-green-500">

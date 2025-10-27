@@ -6,9 +6,10 @@ import { useAuthStore } from '@/store/authStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import ValidationJournaliereModal from '@/components/permits/ValidationJournaliereModal';
+import ControleJournalierModal from '@/components/permits/ControleJournalierModal';
 import { ArrowLeft, Edit, CheckCircle, XCircle, Clock, FileText, Users, Calendar, MapPin, ClipboardList } from 'lucide-react';
 import { formatDate, formatDateTime } from '@/lib/utils';
-import type { PermitStatus } from '@/types';
+import type { PermitStatus, ControleJournalierPermis } from '@/types';
 
 export default function PermitDetailPage() {
   const { id } = useParams();
@@ -18,6 +19,7 @@ export default function PermitDetailPage() {
   // const { t } = useI18n(); // TODO: Use translations
 
   const [validationModalOpen, setValidationModalOpen] = useState(false);
+  const [controleModalOpen, setControleModalOpen] = useState(false);
 
   const permis = id ? getPermisGeneralById(id) : null;
   const planPrevention = permis ? getPlanPreventionById(permis.planPreventionId) : null;
@@ -105,6 +107,16 @@ export default function PermitDetailPage() {
             >
               <ClipboardList className="h-5 w-5 mr-2" />
               Validation journalière
+            </Button>
+          )}
+          {permis.status === 'en_cours' && canAccessFeature('validate_interventions') && (
+            <Button 
+              variant="outline" 
+              onClick={() => setControleModalOpen(true)}
+              className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+            >
+              <Calendar className="h-5 w-5 mr-2" />
+              Contrôle journalier
             </Button>
           )}
         </div>
@@ -412,6 +424,22 @@ export default function PermitDetailPage() {
           validations={permisHauteur.validationsJournalieres || []}
         />
       )}
+
+      {/* Modal de contrôle journalier */}
+      <ControleJournalierModal
+        isOpen={controleModalOpen}
+        onClose={() => setControleModalOpen(false)}
+        onSubmit={handleControleSubmit}
+        permisType={permis.type as 'travaux_electrique' | 'travaux_hauteur'}
+        permisId={id!}
+      />
     </div>
   );
+
+  function handleControleSubmit(data: ControleJournalierPermis) {
+    // Ici, on pourrait sauvegarder le contrôle journalier
+    console.log('Contrôle journalier soumis:', data);
+    setControleModalOpen(false);
+    // TODO: Intégrer avec le store des permis pour sauvegarder
+  }
 }

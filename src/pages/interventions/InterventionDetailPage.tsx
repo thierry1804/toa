@@ -21,6 +21,8 @@ import {
   Eye,
   WifiOff,
   XCircle,
+  Play,
+  Pause,
 } from 'lucide-react';
 import { formatDate, cn } from '@/lib/utils';
 import type { ValidationInterventionJournaliere, Take5Record } from '@/types';
@@ -97,6 +99,27 @@ export default function InterventionDetailPage() {
     }
   };
 
+  const handleDemarrer = () => {
+    if (confirm('Voulez-vous démarrer cette intervention maintenant ?')) {
+      updateInterventionStatus(intervention.id, 'en_cours');
+    }
+  };
+
+  const handleSuspendre = () => {
+    const raison = prompt('Raison de la suspension :');
+    if (raison) {
+      updateInterventionStatus(intervention.id, 'suspendue');
+      // Ajouter observation
+      const observations = intervention.observations || [];
+      observations.push(`Suspension le ${new Date().toLocaleDateString('fr-FR')} - Raison: ${raison}`);
+      // Note: Il faudrait ajouter une fonction updateIntervention pour mettre à jour les observations
+    }
+  };
+
+  const handleReprendre = () => {
+    updateInterventionStatus(intervention.id, 'en_cours');
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       planifiee: { label: 'Planifiée', variant: 'secondary' as const, icon: Calendar },
@@ -158,6 +181,15 @@ export default function InterventionDetailPage() {
         </div>
 
         <div className="flex gap-2">
+          {/* Bouton Démarrer pour statut planifiee */}
+          {intervention.status === 'planifiee' && canAccessFeature('start_interventions') && (
+            <Button onClick={handleDemarrer}>
+              <Play className="h-4 w-4 mr-2" />
+              Démarrer l'intervention
+            </Button>
+          )}
+
+          {/* Boutons pour statut en_cours */}
           {intervention.status === 'en_cours' && canAccessFeature('validate_interventions') && (
             <>
               <Button onClick={() => setShowValidationModal(true)}>
@@ -170,6 +202,24 @@ export default function InterventionDetailPage() {
               </Button>
             </>
           )}
+
+          {/* Bouton Suspendre pour statut en_cours */}
+          {intervention.status === 'en_cours' && canAccessFeature('suspend_interventions') && (
+            <Button variant="warning" onClick={handleSuspendre}>
+              <Pause className="h-4 w-4 mr-2" />
+              Suspendre
+            </Button>
+          )}
+
+          {/* Bouton Reprendre pour statut suspendue */}
+          {intervention.status === 'suspendue' && canAccessFeature('resume_interventions') && (
+            <Button onClick={handleReprendre}>
+              <Play className="h-4 w-4 mr-2" />
+              Reprendre
+            </Button>
+          )}
+
+          {/* Bouton Clôturer pour statut en_cours avec avancement 100% */}
           {intervention.status === 'en_cours' &&
             canAccessFeature('close_interventions') &&
             avancement >= 100 && (

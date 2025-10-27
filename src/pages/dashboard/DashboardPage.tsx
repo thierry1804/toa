@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
 import { useAuthStore } from '@/store/authStore';
 import { useI18n } from '@/lib/i18n';
@@ -358,6 +359,7 @@ const PermitDetailModal = ({ permit, onClose, t }: PermitDetailModalProps) => {
 export default function DashboardPage() {
   const { user } = useAuthStore();
   const { t } = useI18n();
+  const navigate = useNavigate();
   const [selectedPermit, setSelectedPermit] = useState<typeof recentPermits[0] | null>(null);
 
   const statsCards = [
@@ -494,32 +496,39 @@ export default function DashboardPage() {
       </Card>
 
       {/* Quick actions */}
-      {user?.role === 'prestataire' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Actions rapides</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <button className="p-4 text-left border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors">
-                <FileText className="h-6 w-6 text-primary-600 mb-2" />
-                <p className="font-medium text-gray-900">Nouveau permis</p>
-                <p className="text-sm text-gray-600">Créer une demande de permis</p>
-              </button>
-              <button className="p-4 text-left border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors">
-                <FileText className="h-6 w-6 text-primary-600 mb-2" />
-                <p className="font-medium text-gray-900">Plan de prévention</p>
-                <p className="text-sm text-gray-600">Créer un plan de prévention</p>
-              </button>
-              <button className="p-4 text-left border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors">
-                <TrendingUp className="h-6 w-6 text-primary-600 mb-2" />
-                <p className="font-medium text-gray-900">Mes interventions</p>
-                <p className="text-sm text-gray-600">Voir mes interventions en cours</p>
-              </button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Actions rapides</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button
+              onClick={() => navigate('/permits/new')}
+              className="p-4 text-left border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors"
+            >
+              <FileText className="h-6 w-6 text-primary-600 mb-2" />
+              <p className="font-medium text-gray-900">Nouveau permis</p>
+              <p className="text-sm text-gray-600">Créer une demande de permis</p>
+            </button>
+            <button
+              onClick={() => navigate('/prevention/new')}
+              className="p-4 text-left border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors"
+            >
+              <FileText className="h-6 w-6 text-primary-600 mb-2" />
+              <p className="font-medium text-gray-900">Plan de prévention</p>
+              <p className="text-sm text-gray-600">Créer un plan de prévention</p>
+            </button>
+            <button
+              onClick={() => navigate('/interventions')}
+              className="p-4 text-left border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors"
+            >
+              <TrendingUp className="h-6 w-6 text-primary-600 mb-2" />
+              <p className="font-medium text-gray-900">Mes interventions</p>
+              <p className="text-sm text-gray-600">Voir mes interventions en cours</p>
+            </button>
+          </div>
+        </CardContent>
+      </Card>
       
       {/* Permit Detail Modal */}
       <PermitDetailModal 

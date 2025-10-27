@@ -2,23 +2,37 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuthStore } from '@/store/authStore';
+import { usePreventionStore } from '@/store/preventionStore';
 import Input from '@/components/ui/Input';
 import Checkbox from '@/components/ui/Checkbox';
 import Textarea from '@/components/ui/Textarea';
+import Select from '@/components/ui/Select';
 import MultiStepForm from './MultiStepForm';
 import { AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 
 // Schémas de validation pour chaque étape
 const step1Schema = z.object({
+  planPreventionId: z.string().min(1, 'Plan de prévention requis'),
   codeSite: z.string().min(1, 'Code site requis'),
   nombreIntervenants: z.number().min(1, 'Minimum 1 intervenant'),
+  dateDebut: z.string().min(1, 'Date de début requise'),
+  dateFin: z.string().min(1, 'Date de fin requise'),
   travailSousTension: z.boolean(),
   travailHorsTension: z.boolean(),
   consignationEnergie: z.boolean(),
   basseTension: z.boolean(),
   moyenneTension: z.boolean(),
   hauteTension: z.boolean(),
+}).refine((data) => {
+  // Validation: dateFin >= dateDebut
+  if (data.dateDebut && data.dateFin) {
+    return new Date(data.dateFin) >= new Date(data.dateDebut);
+  }
+  return true;
+}, {
+  message: 'La date de fin doit être postérieure ou égale à la date de début',
+  path: ['dateFin'],
 });
 
 const step2Schema = z.object({
@@ -90,6 +104,9 @@ export default function PermitElectriqueForm({ onComplete, onCancel, initialData
   // Étape 1: Informations générales et type de travail
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Step1Component = (formData: any, updateFormData: (data: any) => void) => {
+    const { plansPrevention } = usePreventionStore();
+    const plansActifs = plansPrevention.filter(p => p.status === 'valide');
+
     const {
       register,
       handleSubmit,
@@ -98,8 +115,11 @@ export default function PermitElectriqueForm({ onComplete, onCancel, initialData
     } = useForm<Step1Data>({
       resolver: zodResolver(step1Schema),
       defaultValues: {
+        planPreventionId: formData.planPreventionId || '',
         codeSite: formData.codeSite || '',
         nombreIntervenants: formData.nombreIntervenants || 1,
+        dateDebut: formData.dateDebut || '',
+        dateFin: formData.dateFin || '',
         travailSousTension: formData.travailSousTension || false,
         travailHorsTension: formData.travailHorsTension || false,
         consignationEnergie: formData.consignationEnergie || false,
@@ -112,11 +132,26 @@ export default function PermitElectriqueForm({ onComplete, onCancel, initialData
     const travailSousTension = watch('travailSousTension');
 
     const onSubmit = (data: Step1Data) => {
-      updateFormData(data);
+      updateFormData({ ...formData, ...data });
     };
 
     return (
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <div className="mb-4">
+          <Select
+            label="Référence du plan de prévention *"
+            {...register('planPreventionId')}
+            error={errors.planPreventionId?.message}
+          >
+            <option value="">Sélectionnez un plan de prévention</option>
+            {plansActifs.map((plan) => (
+              <option key={plan.id} value={plan.id}>
+                {plan.reference} - {plan.nomSite}
+              </option>
+            ))}
+          </Select>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
             label="Code Site *"
@@ -130,6 +165,21 @@ export default function PermitElectriqueForm({ onComplete, onCancel, initialData
             {...register('nombreIntervenants', { valueAsNumber: true })}
             error={errors.nombreIntervenants?.message}
             min={1}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input
+            label="Date de début *"
+            type="date"
+            {...register('dateDebut')}
+            error={errors.dateDebut?.message}
+          />
+          <Input
+            label="Date de fin *"
+            type="date"
+            {...register('dateFin')}
+            error={errors.dateFin?.message}
           />
         </div>
 
@@ -216,7 +266,7 @@ export default function PermitElectriqueForm({ onComplete, onCancel, initialData
     const travailSousTension = formData.travailSousTension;
 
     const onSubmit = (data: Step2Data) => {
-      updateFormData(data);
+      updateFormData({ ...formData, ...data });
     };
 
     return (
@@ -296,7 +346,7 @@ export default function PermitElectriqueForm({ onComplete, onCancel, initialData
     });
 
     const onSubmit = (data: Step3Data) => {
-      updateFormData(data);
+      updateFormData({ ...formData, ...data });
     };
 
     return (
@@ -405,7 +455,7 @@ export default function PermitElectriqueForm({ onComplete, onCancel, initialData
     });
 
     const onSubmit = (data: Step4Data) => {
-      updateFormData(data);
+      updateFormData({ ...formData, ...data });
     };
 
     return (
@@ -469,7 +519,7 @@ export default function PermitElectriqueForm({ onComplete, onCancel, initialData
     const consignationEnergie = formData.consignationEnergie;
 
     const onSubmit = (data: Step5Data) => {
-      updateFormData(data);
+      updateFormData({ ...formData, ...data });
     };
 
     if (!consignationEnergie) {
@@ -614,10 +664,14 @@ export default function PermitElectriqueForm({ onComplete, onCancel, initialData
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleComplete = (data: any) => {
+    // Récupérer la référence du plan de prévention
+    const { getPlanPreventionById } = usePreventionStore.getState();
+    const planPrevention = getPlanPreventionById(data.planPreventionId);
+
     // Préparer les données pour le store
     const permisData = {
       permisGeneralId: '', // Sera lié au permis général
-      planPreventionReference: '', // Sera récupéré du permis général
+      planPreventionReference: planPrevention?.reference || '',
       codeSite: data.codeSite,
       nombreIntervenants: data.nombreIntervenants,
       typeTravail: {
@@ -678,8 +732,8 @@ export default function PermitElectriqueForm({ onComplete, onCancel, initialData
         }],
       } : undefined,
       status: 'en_attente_validation_chef' as const,
-      dateDebut: new Date(),
-      dateFin: new Date(),
+      dateDebut: data.dateDebut ? new Date(data.dateDebut) : new Date(),
+      dateFin: data.dateFin ? new Date(data.dateFin) : new Date(),
       creerPar: user?.email || '',
     };
 

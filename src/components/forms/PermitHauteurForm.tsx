@@ -166,7 +166,7 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
     }, [watch, formData, updateFormData]);
 
     const onSubmit = (data: Step1Data) => {
-      updateFormData(data);
+      updateFormData({ ...formData, ...data });
     };
 
     return (
@@ -339,7 +339,7 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
     }, [watch, formData, updateFormData]);
 
     const onSubmit = (data: Step2Data) => {
-      updateFormData(data);
+      updateFormData({ ...formData, ...data });
     };
 
     return (
@@ -481,7 +481,7 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
     }, [watch, formData, updateFormData]);
 
     const onSubmit = (data: Step3Data) => {
-      updateFormData(data);
+      updateFormData({ ...formData, ...data });
     };
 
     return (
@@ -644,7 +644,7 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
     }, [watch, formData, updateFormData]);
 
     const onSubmit = (data: Step4Data) => {
-      updateFormData(data);
+      updateFormData({ ...formData, ...data });
     };
 
     return (
@@ -789,7 +789,7 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
     }, [watch, formData, updateFormData]);
 
     const onSubmit = (data: Step5Data) => {
-      updateFormData(data);
+      updateFormData({ ...formData, ...data });
     };
 
     return (

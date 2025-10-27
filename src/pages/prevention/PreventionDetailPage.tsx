@@ -1,14 +1,30 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { usePermitStore } from '@/store/permitStore';
+import { usePreventionStore } from '@/store/preventionStore';
+import { useAuthStore } from '@/store/authStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import { ArrowLeft, Edit, Printer, Download, Shield, AlertTriangle, Clock, MapPin, Building, FileText, CheckCircle } from 'lucide-react';
+import ValidationChefModal from '@/components/prevention/ValidationChefModal';
+import ValidationHSEModal from '@/components/prevention/ValidationHSEModal';
+import { ArrowLeft, Edit, Printer, Download, Shield, AlertTriangle, Clock, MapPin, Building, FileText, CheckCircle, User, Send } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
 export default function PreventionDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getPlanPreventionById } = usePermitStore();
+  const {
+    getPlanPreventionById,
+    soumettreValidationChef,
+    validerParChef,
+    refuserParChef,
+    validerParHSE,
+    refuserParHSE
+  } = usePreventionStore();
+  const { user, canAccessFeature } = useAuthStore();
+
+  const [showValidationChefModal, setShowValidationChefModal] = useState(false);
+  const [showValidationHSEModal, setShowValidationHSEModal] = useState(false);
 
   const plan = getPlanPreventionById(id || '');
 
@@ -39,6 +55,32 @@ export default function PreventionDetailPage() {
     }
   };
 
+  const handleSoumettre = () => {
+    if (confirm('Voulez-vous soumettre ce plan pour validation par le Chef de Projet ?')) {
+      soumettreValidationChef(plan.id);
+    }
+  };
+
+  const handleValiderChef = (commentaires?: string) => {
+    validerParChef(plan.id, user?.email || '', commentaires);
+    setShowValidationChefModal(false);
+  };
+
+  const handleRefuserChef = (motif: string) => {
+    refuserParChef(plan.id, user?.email || '', motif);
+    setShowValidationChefModal(false);
+  };
+
+  const handleValiderHSE = (reference: string, commentaires?: string) => {
+    validerParHSE(plan.id, user?.email || '', reference, commentaires);
+    setShowValidationHSEModal(false);
+  };
+
+  const handleRefuserHSE = (motif: string) => {
+    refuserParHSE(plan.id, user?.email || '', motif);
+    setShowValidationHSEModal(false);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -55,10 +97,35 @@ export default function PreventionDetailPage() {
             <Download className="h-4 w-4 mr-2" />
             Télécharger
           </Button>
-          <Button>
-            <Edit className="h-4 w-4 mr-2" />
-            Modifier
-          </Button>
+
+          {/* Boutons de workflow selon le statut et le rôle */}
+          {plan.status === 'brouillon' && user?.role === 'prestataire' && (
+            <Button onClick={handleSoumettre}>
+              <Send className="h-4 w-4 mr-2" />
+              Soumettre pour validation
+            </Button>
+          )}
+
+          {plan.status === 'soumis_validation_chef' && user?.role === 'chef_projet' && canAccessFeature('validate_prevention_plans_chef') && (
+            <Button onClick={() => setShowValidationChefModal(true)}>
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Valider
+            </Button>
+          )}
+
+          {plan.status === 'valide_chef_attente_hse' && user?.role === 'hse' && canAccessFeature('validate_prevention_plans_hse') && (
+            <Button onClick={() => setShowValidationHSEModal(true)}>
+              <Shield className="h-4 w-4 mr-2" />
+              Valider (HSE)
+            </Button>
+          )}
+
+          {plan.status === 'valide' && (
+            <Button>
+              <Edit className="h-4 w-4 mr-2" />
+              Modifier
+            </Button>
+          )}
         </div>
       </div>
 
@@ -238,6 +305,23 @@ export default function PreventionDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Modals de validation */}
+      <ValidationChefModal
+        isOpen={showValidationChefModal}
+        onClose={() => setShowValidationChefModal(false)}
+        onValidate={handleValiderChef}
+        onReject={handleRefuserChef}
+        plan={plan}
+      />
+
+      <ValidationHSEModal
+        isOpen={showValidationHSEModal}
+        onClose={() => setShowValidationHSEModal(false)}
+        onValidate={handleValiderHSE}
+        onReject={handleRefuserHSE}
+        plan={plan}
+      />
     </div>
   );
 }

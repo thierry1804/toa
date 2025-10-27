@@ -32,6 +32,7 @@ const rolePermissions: Record<UserRole, string[]> = {
   chef_projet: [
     'view_dashboard',
     'view_permits',
+    'create_permits',
     'validate_permits_chef',
     'view_prevention_plans',
     'create_prevention_plans',

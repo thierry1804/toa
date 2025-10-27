@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import React, { useState, type ReactNode } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
@@ -72,57 +72,41 @@ export default function MultiStepForm({
       </div>
 
       {/* Progress Bar */}
-      <div className="w-full overflow-x-auto pb-2">
-        <div className="flex items-start sm:items-center justify-between min-w-max">
+      <div className="w-full pb-2">
+        <div className="flex items-start w-full">
           {steps.map((step, index) => (
-            <div key={step.id} className="flex flex-col items-center px-1 sm:px-2">
-              <div className="flex items-center h-8">
-                <div
-                  className={`flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full text-xs sm:text-sm font-medium transition-colors duration-200 ${
+            <React.Fragment key={step.id}>
+              <div className="flex flex-col items-center relative z-10 flex-1 min-w-0 px-1">
+                <div 
+                  className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-colors duration-200 ${
                     index < currentStep
                       ? 'bg-green-500 text-white'
                       : index === currentStep
                       ? 'bg-primary-500 text-white'
                       : 'bg-gray-200 text-gray-600'
                   }`}
-                  style={{
-                    minWidth: '1.75rem',
-                    lineHeight: '1.75rem',
-                    textAlign: 'center',
-                    position: 'relative',
-                    top: '0.125rem' // Ajustement fin pour l'alignement
-                  }}
                 >
                   {index < currentStep ? (
-                    <Check className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <Check className="h-4 w-4" />
                   ) : (
                     index + 1
                   )}
                 </div>
-                {index < steps.length - 1 && (
-                  <div 
-                    className={`hidden xs:block w-8 sm:w-12 md:w-16 h-0.5 mx-1 sm:mx-2 ${
-                      index < currentStep ? 'bg-green-500' : 'bg-gray-200'
-                    }`}
-                    style={{
-                      position: 'relative',
-                      top: '0.125rem' // Ajustement fin pour l'alignement
-                    }}
-                  />
-                )}
-              </div>
-              <div className="mt-1.5 text-center">
-                <p className={`text-[10px] xs:text-xs font-medium leading-tight ${
-                  index <= currentStep ? 'text-gray-900' : 'text-gray-500'
+                <p className={`mt-2 text-xs font-medium text-center whitespace-normal w-full px-1 leading-tight ${
+                  index <= currentStep ? 'text-gray-900 font-medium' : 'text-gray-400'
                 }`}>
-                  {step.title.split(' ').map((word, i) => (
-                    <span key={i} className="block xs:inline">
-                      {word}
-                    </span>
-                  ))}
+                  {step.title}
                 </p>
               </div>
-            </div>
+              
+              {index < steps.length - 1 && (
+                <div 
+                  className={`h-0.5 flex-1 mt-4 ${
+                    index < currentStep ? 'bg-green-500' : 'bg-gray-200'
+                  }`}
+                />
+              )}
+            </React.Fragment>
           ))}
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2 mt-4">

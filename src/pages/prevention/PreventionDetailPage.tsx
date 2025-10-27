@@ -98,12 +98,12 @@ export default function PreventionDetailPage() {
                 </h3>
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <p className="font-medium">{plan.entreprisePrestataire}</p>
-                  <p className="text-sm text-gray-600">SIRET: {plan.siret}</p>
+                  <p className="text-sm text-gray-600">Numéro RCS: {plan.numeroRCS}</p>
                   <p className="mt-2 text-sm">
                     <span className="font-medium">Représentant:</span> {plan.representantPrestataire}
                   </p>
                   <p className="text-sm">
-                    <span className="font-medium">Fonction:</span> {plan.fonctionPrestataire}
+                    <span className="font-medium">Fonction:</span> {plan.qualiteFonctionRepresentant}
                   </p>
                 </div>
               </div>
@@ -115,9 +115,9 @@ export default function PreventionDetailPage() {
                 </h3>
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <p className="font-medium">{plan.nomSite}</p>
-                  <p className="text-sm">{plan.adresseSite}</p>
+                  <p className="text-sm">{plan.siegeSocial}</p>
                   <p className="text-sm">
-                    {plan.codePostal} {plan.ville}
+                    {plan.localite}, {plan.commune}, {plan.region}
                   </p>
                   {plan.coordonneesGPS && (
                     <p className="text-sm text-gray-500 mt-1">
@@ -197,7 +197,7 @@ export default function PreventionDetailPage() {
                       <div key={index} className="bg-gray-50 p-4 rounded-lg border-l-4 border-yellow-500">
                         <div className="flex justify-between items-start">
                           <div>
-                            <p className="font-medium">{risque.risque}</p>
+                            <p className="font-medium">{risque.description}</p>
                             <p className="text-sm text-gray-600 mt-1">{risque.categorie}</p>
                           </div>
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${niveau.color}`}>

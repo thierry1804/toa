@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
 import { useAuthStore } from '@/store/authStore';
+import { usePermitStore } from '@/store/permitStore';
 import { useI18n } from '@/lib/i18n';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import {
   FileText,
   CheckCircle,
@@ -360,7 +362,56 @@ export default function DashboardPage() {
   const { user } = useAuthStore();
   const { t } = useI18n();
   const navigate = useNavigate();
+  const { permisGeneraux } = usePermitStore();
   const [selectedPermit, setSelectedPermit] = useState<typeof recentPermits[0] | null>(null);
+
+  // Données pour les graphiques
+  const chartData = useMemo(() => {
+    // Évolution des permis sur les 30 derniers jours
+    const last30Days = Array.from({ length: 30 }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (29 - i));
+      return date.toISOString().split('T')[0];
+    });
+
+    const evolutionData = last30Days.map((date) => {
+      const count = permisGeneraux.filter((p) => {
+        const permitDate = new Date(p.createdAt).toISOString().split('T')[0];
+        return permitDate === date;
+      }).length;
+      return {
+        date: new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
+        total: count,
+      };
+    });
+
+    // Répartition par type
+    const typeData = permisGeneraux.reduce((acc, p) => {
+      const type = p.type || 'general';
+      acc[type] = (acc[type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const typeChartData = Object.entries(typeData).map(([type, count]) => ({
+      name: t(`permits.types.${type}`) || type,
+      value: count,
+    }));
+
+    // Répartition par statut
+    const statusData = permisGeneraux.reduce((acc, p) => {
+      acc[p.status] = (acc[p.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const statusChartData = Object.entries(statusData).map(([status, count]) => ({
+      name: t(`permits.statuses.${status}`) || status,
+      value: count,
+    }));
+
+    return { evolutionData, typeChartData, statusChartData };
+  }, [permisGeneraux, t]);
+
+  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
   const statsCards = [
     {
@@ -456,6 +507,78 @@ export default function DashboardPage() {
             </Card>
           );
         })}
+      </div>
+
+      {/* Graphiques */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Évolution des permis sur 30 jours */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Évolution des permis (30 derniers jours)</CardTitle>
+            <CardDescription>Nombre de permis créés par jour</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={chartData.evolutionData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" angle={-45} textAnchor="end" height={80} />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="total" stroke="#3b82f6" strokeWidth={2} name="Permis créés" />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Répartition par statut */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Répartition par statut</CardTitle>
+            <CardDescription>Distribution des permis selon leur statut</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={chartData.statusChartData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {chartData.statusChartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Répartition par type */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Répartition par type de permis</CardTitle>
+            <CardDescription>Nombre de permis par type</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={chartData.typeChartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="value" fill="#3b82f6" name="Nombre de permis" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Recent permits */}

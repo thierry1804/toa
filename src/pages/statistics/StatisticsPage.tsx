@@ -4,6 +4,7 @@ import { usePermitStore } from '@/store/permitStore';
 // import { useI18n } from '@/lib/i18n'; // Unused import
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import {
   FileText,
   TrendingUp,
@@ -94,6 +95,46 @@ export default function StatisticsPage() {
     return risks;
   }, [permisGeneraux]);
 
+  // Données pour les graphiques
+  const chartData = useMemo(() => {
+    // Données pour le graphique circulaire des statuts
+    const statusChartData = [
+      { name: 'Validés', value: permitsStats.valides, color: '#10b981' },
+      { name: 'En attente', value: permitsStats.enAttente, color: '#f59e0b' },
+      { name: 'En cours', value: permitsStats.enCours, color: '#3b82f6' },
+      { name: 'Clôturés', value: permitsStats.clotures, color: '#6b7280' },
+      { name: 'Refusés', value: permitsStats.refuses, color: '#ef4444' },
+    ].filter(item => item.value > 0);
+
+    // Données pour les Top 5 sites
+    const siteChartData = siteStats.map((stat, index) => ({
+      name: stat.site,
+      value: stat.count,
+      rank: index + 1,
+    }));
+
+    // Données pour les Top 5 contractants
+    const contractantChartData = contractantStats.map((stat, index) => ({
+      name: stat.contractant,
+      value: stat.count,
+      rank: index + 1,
+    }));
+
+    // Données pour les risques
+    const riskChartData = [
+      { name: 'Travaux à chaud', value: riskStats.travauxChaud },
+      { name: 'Travaux en hauteur', value: riskStats.travauxHauteur },
+      { name: 'Travaux électriques', value: riskStats.travauxElectrique },
+      { name: 'Espace confiné', value: riskStats.travauxEspaceConfine },
+      { name: 'Excavation', value: riskStats.travauxExcavation },
+      { name: 'Autres', value: riskStats.autres },
+    ].filter(item => item.value > 0);
+
+    return { statusChartData, siteChartData, contractantChartData, riskChartData };
+  }, [permitsStats, siteStats, contractantStats, riskStats]);
+
+  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+
   // Taux de validation
   const validationRate = useMemo(() => {
     if (permitsStats.total === 0) return 0;
@@ -172,11 +213,74 @@ export default function StatisticsPage() {
         </Card>
       </div>
 
-      {/* Répartition par statut */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Graphiques de répartition */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Graphique circulaire des statuts */}
         <Card>
           <CardHeader>
             <CardTitle>Statut des Permis</CardTitle>
+            <CardDescription>Répartition des permis par statut</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {chartData.statusChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={chartData.statusChartData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {chartData.statusChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-center text-gray-500 py-8">Aucune donnée disponible</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Graphique des risques */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              Types de Travaux à Risques
+            </CardTitle>
+            <CardDescription>Répartition des travaux par type de risque</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {chartData.riskChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={chartData.riskChartData} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" />
+                  <YAxis dataKey="name" type="category" width={120} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="value" fill="#ef4444" name="Nombre de permis" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-center text-gray-500 py-8">Aucune donnée disponible</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Répartition par statut - Version détaillée */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Statut des Permis (Détails)</CardTitle>
             <CardDescription>Répartition des permis par statut</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -345,8 +449,8 @@ export default function StatisticsPage() {
         </Card>
       </div>
 
-      {/* Top 5 Sites et Contractants */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Top 5 Sites et Contractants avec graphiques */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -356,24 +460,33 @@ export default function StatisticsPage() {
             <CardDescription>Sites avec le plus de permis</CardDescription>
           </CardHeader>
           <CardContent>
-            {siteStats.length === 0 ? (
+            {chartData.siteChartData.length === 0 ? (
               <p className="text-center text-gray-500 py-8">Aucune donnée disponible</p>
             ) : (
-              <div className="space-y-3">
-                {siteStats.map((stat, index) => (
-                  <div key={stat.site} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <span className="text-sm font-bold text-primary-600">{index + 1}</span>
+              <>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={chartData.siteChartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="value" fill="#3b82f6" name="Nombre de permis" />
+                  </BarChart>
+                </ResponsiveContainer>
+                <div className="mt-4 space-y-2">
+                  {siteStats.map((stat, index) => (
+                    <div key={stat.site} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-primary-600">{index + 1}.</span>
+                        <span className="text-gray-700">{stat.site}</span>
                       </div>
-                      <span className="text-sm font-medium text-gray-900">{stat.site}</span>
+                      <Badge variant="primary" size="sm">
+                        {stat.count}
+                      </Badge>
                     </div>
-                    <Badge variant="primary" size="lg">
-                      {stat.count}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
@@ -387,35 +500,44 @@ export default function StatisticsPage() {
             <CardDescription>Contractants avec le plus de permis</CardDescription>
           </CardHeader>
           <CardContent>
-            {contractantStats.length === 0 ? (
+            {chartData.contractantChartData.length === 0 ? (
               <p className="text-center text-gray-500 py-8">Aucune donnée disponible</p>
             ) : (
-              <div className="space-y-3">
-                {contractantStats.map((stat, index) => (
-                  <div key={stat.contractant} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <span className="text-sm font-bold text-green-600">{index + 1}</span>
+              <>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={chartData.contractantChartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="value" fill="#10b981" name="Nombre de permis" />
+                  </BarChart>
+                </ResponsiveContainer>
+                <div className="mt-4 space-y-2">
+                  {contractantStats.map((stat, index) => (
+                    <div key={stat.contractant} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-green-600">{index + 1}.</span>
+                        <span className="text-gray-700">{stat.contractant}</span>
                       </div>
-                      <span className="text-sm font-medium text-gray-900">{stat.contractant}</span>
+                      <Badge variant="success" size="sm">
+                        {stat.count}
+                      </Badge>
                     </div>
-                    <Badge variant="success" size="lg">
-                      {stat.count}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Statistiques des risques */}
+      {/* Statistiques des risques - Version détaillée */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5" />
-            Types de Travaux à Risques
+            Types de Travaux à Risques (Détails)
           </CardTitle>
           <CardDescription>Répartition des travaux par type de risque</CardDescription>
         </CardHeader>

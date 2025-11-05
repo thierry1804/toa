@@ -42,7 +42,16 @@ const step3Schema = z.object({
     probabilite: z.enum(['rare', 'peu_probable', 'probable', 'tres_probable']),
     niveau: z.enum(['faible', 'modere', 'eleve', 'intolerable']),
     mesures: z.string().min(1, 'Mesures préventives requises'),
-    mesuresExistentes: z.boolean(),
+    autreDetail: z.string().optional(),
+  }).refine((data) => {
+    // Si c'est un risque "autre", autreDetail est requis
+    if (['autre_social', 'autre_sante', 'autre_rooftop'].includes(data.id)) {
+      return data.autreDetail && data.autreDetail.trim().length > 0;
+    }
+    return true;
+  }, {
+    message: 'Veuillez préciser le risque',
+    path: ['autreDetail'],
   })).min(1, 'Au moins un risque doit être identifié'),
 });
 
@@ -82,41 +91,58 @@ const categoriesRisques = [
     label: 'Risques liés à l\'environnement',
     sousCategories: [
       { id: 'pollution', label: 'Pollutions (déversement)' },
+      { id: 'biodiversite', label: 'Destruction ou dégradation de la biodiversité' },
       { id: 'incendie', label: 'Incendie' }
     ]
   },
   {
-    id: 'chantier',
-    label: 'Risques liés au chantier',
+    id: 'social',
+    label: 'Risque Social',
     sousCategories: [
-      { id: 'voie_circulation', label: 'Voie de circulation' },
-      { id: 'zone_chargement', label: 'Zone de chargement/déchargement' },
-      { id: 'stockage', label: 'Stockage' }
+      { id: 'contestation_riveraine', label: 'Contestation riveraine' },
+      { id: 'surete', label: 'Sureté' },
+      { id: 'autre_social', label: 'Autre(s) à préciser' }
     ]
   },
   {
-    id: 'travaux',
-    label: 'Risques liés aux travaux',
+    id: 'sante_securite',
+    label: 'Risque lié à la santé et sécurité',
     sousCategories: [
-      { id: 'travaux_hauteur', label: 'Travaux en hauteur' },
-      { id: 'manutention', label: 'Manutention manuelle' },
-      { id: 'outillage', label: 'Utilisation d\'outils et d\'équipements' },
-      { id: 'chimique', label: 'Produits chimiques' },
-      { id: 'electrique', label: 'Risque électrique' },
-      { id: 'tronconnage', label: 'Tronçonnage, meulage, soudage' },
-      { id: 'demolition', label: 'Démolition' },
-      { id: 'travaux_enterres', label: 'Travaux en milieu confiné ou enterré' },
-      { id: 'coactivite', label: 'Cœxistence d\'activités' },
-      { id: 'autres_travaux', label: 'Autres risques liés aux travaux' }
+      { id: 'securite_routiere', label: 'Accident lié à la sécurité routière' },
+      { id: 'chimique', label: 'Risque chimique' },
+      { id: 'hauteur', label: 'Risque en hauteur' },
+      { id: 'ensevelissement', label: 'Risque d\'ensevelissement et /ou effondrement' },
+      { id: 'noyade', label: 'Risque de noyade' },
+      { id: 'electrique', label: 'Risques liés aux installations électrique' },
+      { id: 'outils_main', label: 'Risque lié à la manipulation des outils à la main' },
+      { id: 'outils_electroportatifs', label: 'Risque lié à la manipulation des outillages électroportatifs' },
+      { id: 'manutention_mecanique', label: 'Accident lié à manutention mécanique' },
+      { id: 'manutention_manuelle', label: 'Accident lié à manutention manuelle' },
+      { id: 'travail_chaud', label: 'Risque lié au travail à chaud' },
+      { id: 'travail_isole', label: 'Risque lié au travail isolé' },
+      { id: 'coactivites', label: 'Risque lié aux coactivités' },
+      { id: 'ambiance_thermique', label: 'Risque lié à l\'ambiance thermique' },
+      { id: 'bruit', label: 'Risque lié au bruit' },
+      { id: 'psychosociaux', label: 'Risques psychosociaux' },
+      { id: 'maladies_infectieuses', label: 'Risque face aux maladies infectieuses' },
+      { id: 'paludisme', label: 'Risque du paludisme' },
+      { id: 'autre_sante', label: 'Autre(s) à préciser' }
     ]
   },
   {
-    id: 'autres',
-    label: 'Autres risques',
+    id: 'infrastructure',
+    label: 'Risque lié aux installation/infrastructure existants',
     sousCategories: [
-      { id: 'meteo', label: 'Conditions météorologiques' },
-      { id: 'vandalisme', label: 'Vandalisme, vol' },
-      { id: 'autres_risques', label: 'Autres risques non identifiés' }
+      { id: 'acces_site', label: 'Risques liés à l\'accès site (ex: site Rooftop)' },
+      { id: 'etat_infrastructure', label: 'Risques liés à l\'état des infrastructures existants (ex: Pylône)' },
+      { id: 'autre_rooftop', label: 'Autre(s) à préciser pour le site Rooftop' }
+    ]
+  },
+  {
+    id: 'securite_routiere_deplacement',
+    label: 'Risques lié à la sécurité routière',
+    sousCategories: [
+      { id: 'deplacement_site', label: 'Risques liés au déplacement vers site' }
     ]
   }
 ];
@@ -150,6 +176,8 @@ const RisquesIdentifies = ({ formData, updateFormData }: { formData: Partial<Pre
         }
       });
 
+      const isAutre = ['autre_social', 'autre_sante', 'autre_rooftop'].includes(risqueId);
+
       const newRisque = {
         id: risqueId,
         categorie: categorieLabel,
@@ -158,11 +186,19 @@ const RisquesIdentifies = ({ formData, updateFormData }: { formData: Partial<Pre
         probabilite: 'rare' as const,
         niveau: 'faible' as const,
         mesures: '',
-        mesuresExistentes: false,
+        autreDetail: isAutre ? '' : undefined,
       };
 
       updateFormData({ risquesIdentifies: [...currentRisques, newRisque] });
     }
+  };
+
+  const updateRisque = (index: number, field: string, value: any) => {
+    const currentRisques = (formData.risquesIdentifies || []) as any[];
+    const updated = currentRisques.map((r, i) =>
+      i === index ? { ...r, [field]: value } : r
+    );
+    updateFormData({ risquesIdentifies: updated });
   };
 
   return (
@@ -241,7 +277,11 @@ const RisquesIdentifies = ({ formData, updateFormData }: { formData: Partial<Pre
           <div className="mt-6 space-y-4">
             <h5 className="font-medium text-sm text-gray-700">Détails des risques sélectionnés</h5>
             
-            {(formData.risquesIdentifies || []).map((risque, index) => (
+            {(formData.risquesIdentifies || []).map((risque, index) => {
+              const isAutre = ['autre_social', 'autre_sante', 'autre_rooftop'].includes(risque.id);
+              const risqueAny = risque as any;
+
+              return (
               <div key={risque.id} className="border rounded-lg p-4 space-y-4">
                 <div className="flex justify-between items-start">
                   <div>
@@ -260,10 +300,27 @@ const RisquesIdentifies = ({ formData, updateFormData }: { formData: Partial<Pre
                   </button>
                 </div>
                 
+                  {/* Zone de texte pour "Autre(s) à préciser" */}
+                  {isAutre && (
+                    <div className="space-y-2">
+                      <Textarea
+                        name={`risquesIdentifies.${index}.autreDetail`}
+                        label="Précisez le risque"
+                        placeholder="Veuillez préciser le risque..."
+                        rows={2}
+                        required
+                        value={risqueAny.autreDetail || ''}
+                        onChange={(e) => updateRisque(index, 'autreDetail', e.target.value)}
+                      />
+                    </div>
+                  )}
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Select
                     name={`risquesIdentifies.${index}.gravite`}
                     label="Gravité"
+                      value={risqueAny.gravite || ''}
+                      onChange={(e) => updateRisque(index, 'gravite', e.target.value)}
                     options={[
                       { value: 'faible', label: 'Faible' },
                       { value: 'moyenne', label: 'Moyenne' },
@@ -276,6 +333,8 @@ const RisquesIdentifies = ({ formData, updateFormData }: { formData: Partial<Pre
                   <Select
                     name={`risquesIdentifies.${index}.probabilite`}
                     label="Probabilité"
+                      value={risqueAny.probabilite || ''}
+                      onChange={(e) => updateRisque(index, 'probabilite', e.target.value)}
                     options={[
                       { value: 'rare', label: 'Rare' },
                       { value: 'peu_probable', label: 'Peu probable' },
@@ -288,6 +347,8 @@ const RisquesIdentifies = ({ formData, updateFormData }: { formData: Partial<Pre
                   <Select
                     name={`risquesIdentifies.${index}.niveau`}
                     label="Niveau de risque"
+                      value={risqueAny.niveau || ''}
+                      onChange={(e) => updateRisque(index, 'niveau', e.target.value)}
                     options={[
                       { value: 'faible', label: 'Faible' },
                       { value: 'modere', label: 'Modéré' },
@@ -304,17 +365,12 @@ const RisquesIdentifies = ({ formData, updateFormData }: { formData: Partial<Pre
                   placeholder="Décrivez les mesures de prévention spécifiques pour ce risque"
                   rows={2}
                   required
-                />
-                
-                <div className="flex items-center">
-                  <Checkbox
-                    name={`risquesIdentifies.${index}.mesuresExistentes`}
-                    label="Des mesures de prévention sont déjà en place"
-                    className="mr-2"
+                    value={risqueAny.mesures || ''}
+                    onChange={(e) => updateRisque(index, 'mesures', e.target.value)}
                   />
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -323,10 +379,10 @@ const RisquesIdentifies = ({ formData, updateFormData }: { formData: Partial<Pre
 };
 
 const documentOptions = [
-  { value: 'attestation_assurance', label: 'Attestation d\'assurance responsabilité civile' },
-  { value: 'plan_intervention', label: 'Plan d\'intervention détaillé' },
-  { value: 'fiches_risques', label: 'Fiches de poste et d\'exposition aux risques' },
-  { value: 'autres', label: 'Autres documents' },
+  { value: 'plan_urgence', label: 'Plan d\'urgence *' },
+  { value: 'fiches_donnees_securite', label: 'Fiches de données de sécurité (FDS) *' },
+  { value: 'liste_intervenants_attestation', label: 'Liste des intervenants, Attestation de formation / habilitation HSE *' },
+  { value: 'fiche_conformite_materiel', label: 'Fiche de conformité du matériel/équipement utilisé *' },
 ];
 
 // Composant pour l'étape PROJET
@@ -579,27 +635,37 @@ export default function PreventionMultiStepForm({ onSubmit, onCancel, initialDat
           <div className="space-y-4">
             <h4 className="font-medium">Documents à fournir</h4>
             <div className="space-y-2">
-              {documentOptions.map(({ value, label }) => (
-                <div key={value} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`doc-${value}`}
-                    checked={(formData.documentsFournis || []).includes(value)}
-                onChange={(event) => {
-                      const checked = event.target.checked;
-                      const updated = checked
-                        ? [...(formData.documentsFournis || []), value]
-                        : (formData.documentsFournis || []).filter((v) => v !== value);
-                      updateFormData({ documentsFournis: updated });
-                    }}
-                  />
-                  <label
-                    htmlFor={`doc-${value}`}
-                    className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    {label}
-                  </label>
-                </div>
-              ))}
+              {documentOptions.map(({ value, label }) => {
+                const labelParts = label.split('*');
+                const hasAsterisk = label.includes('*');
+                return (
+                  <div key={value} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`doc-${value}`}
+                      checked={(formData.documentsFournis || []).includes(value)}
+                      onChange={(event) => {
+                        const checked = event.target.checked;
+                        const updated = checked
+                          ? [...(formData.documentsFournis || []), value]
+                          : (formData.documentsFournis || []).filter((v) => v !== value);
+                        updateFormData({ documentsFournis: updated });
+                      }}
+                    />
+                    <label
+                      htmlFor={`doc-${value}`}
+                      className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      {hasAsterisk ? (
+                        <>
+                          {labelParts[0]}<span className="text-red-600">*</span>
+                        </>
+                      ) : (
+                        label
+                      )}
+                    </label>
+                  </div>
+                );
+              })}
             </div>
           </div>
           
@@ -610,8 +676,7 @@ export default function PreventionMultiStepForm({ onSubmit, onCancel, initialDat
                 name="accordResponsable"
                 label={
                   <span>
-                    Je certifie sur l'honneur l'exactitude des informations fournies et m'engage à respecter
-                    les consignes de sécurité énoncées dans ce document.
+                    Je certifie sur l'honneur l'exactitude des informations fournies, et m'engage à appliquer toutes les mesures de sécurité énoncées dans ce document
                   </span>
                 }
                 required
@@ -698,11 +763,16 @@ export default function PreventionMultiStepForm({ onSubmit, onCancel, initialDat
                     {(formData.risquesIdentifies || []).length} risque(s) identifié(s)
                   </h5>
                   <div className="mt-2 space-y-2">
-                    {(formData.risquesIdentifies || []).map((risque, index) => (
-                      <div key={index} className="text-sm text-gray-600">
-                        • {risque.risque} <span className="text-gray-400">({risque.niveau})</span>
-                      </div>
-                    ))}
+                    {(formData.risquesIdentifies || []).map((risque, index) => {
+                      const risqueAny = risque as any;
+                      const isAutre = ['autre_social', 'autre_sante', 'autre_rooftop'].includes(risque.id);
+                      const detail = isAutre && risqueAny.autreDetail ? `: ${risqueAny.autreDetail}` : '';
+                      return (
+                        <div key={index} className="text-sm text-gray-600">
+                          • {risque.risque}{detail} <span className="text-gray-400">({risque.niveau})</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}

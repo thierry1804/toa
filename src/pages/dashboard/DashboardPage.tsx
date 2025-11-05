@@ -385,15 +385,19 @@ export default function DashboardPage() {
       };
     });
 
-    // Répartition par type
+    // Répartition par type de travaux à risques (plus pertinent que par type de permis)
     const typeData = permisGeneraux.reduce((acc, p) => {
-      const type = p.type || 'general';
-      acc[type] = (acc[type] || 0) + 1;
+      if (p.travauxRisques.travauxHauteur) acc['Travaux en hauteur'] = (acc['Travaux en hauteur'] || 0) + 1;
+      if (p.travauxRisques.travauxElectrique) acc['Travaux électriques'] = (acc['Travaux électriques'] || 0) + 1;
+      if (p.travauxRisques.travauxChaud) acc['Travaux à chaud'] = (acc['Travaux à chaud'] || 0) + 1;
+      if (p.travauxRisques.travauxEspaceConfine) acc['Espace confiné'] = (acc['Espace confiné'] || 0) + 1;
+      if (p.travauxRisques.travauxExcavation) acc['Excavation'] = (acc['Excavation'] || 0) + 1;
+      if (p.travauxRisques.autres) acc['Autres'] = (acc['Autres'] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
     const typeChartData = Object.entries(typeData).map(([type, count]) => ({
-      name: t(`permits.types.${type}`) || type,
+      name: type,
       value: count,
     }));
 
@@ -545,12 +549,15 @@ export default function DashboardPage() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  label={(props: any) => {
+                    const { name, percent } = props;
+                    return `${name}: ${((percent as number) * 100).toFixed(0)}%`;
+                  }}
                   outerRadius={100}
                   fill="#8884d8"
                   dataKey="value"
                 >
-                  {chartData.statusChartData.map((entry, index) => (
+                  {chartData.statusChartData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -560,11 +567,11 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Répartition par type */}
+        {/* Répartition par type de travaux à risques */}
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Répartition par type de permis</CardTitle>
-            <CardDescription>Nombre de permis par type</CardDescription>
+            <CardTitle>Répartition par type de travaux à risques</CardTitle>
+            <CardDescription>Nombre de permis par type de travaux à risques</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>

@@ -29,7 +29,7 @@ import type { InterventionStatus } from '@/types';
 export default function InterventionsListPage() {
   const { interventions } = useInterventionStore();
   const { user, canAccessFeature } = useAuthStore();
-  const { permisGeneraux, plansPrevention } = usePermitStore();
+  const { plansPrevention } = usePermitStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');

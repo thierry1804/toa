@@ -6,12 +6,12 @@ import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Select from '@/components/ui/Select';
 import Checkbox from '@/components/ui/Checkbox';
-import { AlertTriangle, AlertCircle, HardHat, User, MapPin, Calendar, FileText, Shield, Users, AlertOctagon, Settings } from 'lucide-react';
+import { AlertTriangle, HardHat, MapPin, Calendar, FileText, Shield, AlertOctagon, Settings } from 'lucide-react';
 
 // Define schemas for each step
 const step0Schema = z.object({
   processType: z.enum(['nouveau_site', 'vie_reseau', 'infrastructure', 'maintenance', 'energie'], {
-    errorMap: () => ({ message: 'Veuillez sélectionner un type de process' }),
+    message: 'Veuillez sélectionner un type de process',
   }),
 });
 

@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useInterventionStore } from '@/store/interventionStore';
 import { useAuthStore } from '@/store/authStore';
+import { usePermitStore } from '@/store/permitStore';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { Label } from '../../components/ui/Label';
@@ -9,10 +10,16 @@ import Textarea from '../../components/ui/Textarea';
 import Select from '../../components/ui/Select';
 import { format } from 'date-fns';
 
-export default function InterventionForm() {
+interface InterventionFormProps {
+  interventionId?: string;
+}
+
+export default function InterventionForm({ interventionId }: InterventionFormProps) {
   const navigate = useNavigate();
-  const { addIntervention } = useInterventionStore();
+  const { addIntervention, updateIntervention, getInterventionById } = useInterventionStore();
   const { user } = useAuthStore();
+  const { permisGeneraux, plansPrevention } = usePermitStore();
+  const isEditMode = !!interventionId;
 
   const [formData, setFormData] = useState({
     reference: `INT-${format(new Date(), 'yyyyMMdd-HHmm')}`,
@@ -34,8 +41,68 @@ export default function InterventionForm() {
     modeHorsLigne: false,
   });
 
+  // Charger les données de l'intervention en mode édition
+  useEffect(() => {
+    if (isEditMode && interventionId) {
+      const intervention = getInterventionById(interventionId);
+      if (intervention) {
+        setFormData({
+          reference: intervention.reference,
+          permisId: intervention.permisId,
+          permisReference: intervention.permisReference,
+          planPreventionId: intervention.planPreventionId,
+          prestataire: intervention.prestataire,
+          nomSite: intervention.nomSite,
+          codeSite: intervention.codeSite,
+          region: intervention.region,
+          description: intervention.description,
+          typeIntervention: intervention.typeIntervention,
+          dateDebut: format(new Date(intervention.dateDebut), "yyyy-MM-dd'T'HH:mm"),
+          dateFin: format(new Date(intervention.dateFin), "yyyy-MM-dd'T'HH:mm"),
+          nombreIntervenants: intervention.nombreIntervenants,
+          responsableChantier: intervention.responsableChantier,
+          responsableContact: intervention.responsableContact,
+          zoneEnclavee: intervention.zoneEnclavee,
+          modeHorsLigne: intervention.modeHorsLigne,
+        });
+      }
+    }
+  }, [interventionId, isEditMode, getInterventionById]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target as HTMLInputElement;
+    
+    // Si on change le permis, mettre à jour automatiquement certaines informations
+    if (name === 'permisId' && value) {
+      const permis = permisGeneraux.find(p => p.id === value);
+      if (permis) {
+        setFormData(prev => ({
+          ...prev,
+          permisId: value,
+          permisReference: permis.numero || permis.reference || '',
+          planPreventionId: permis.planPreventionId || prev.planPreventionId,
+          prestataire: permis.contractant || prev.prestataire,
+          codeSite: permis.codeSite || prev.codeSite,
+          nombreIntervenants: permis.nombreIntervenants || prev.nombreIntervenants,
+        }));
+        return;
+      }
+    }
+    
+    // Si on change le plan de prévention, mettre à jour certaines informations
+    if (name === 'planPreventionId' && value) {
+      const plan = plansPrevention.find(p => p.id === value);
+      if (plan) {
+        setFormData(prev => ({
+          ...prev,
+          planPreventionId: value,
+          prestataire: plan.entreprisePrestataire || prev.prestataire,
+          nombreIntervenants: plan.nombreIntervenants || prev.nombreIntervenants,
+        }));
+        return;
+      }
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: type === 'number' ? parseInt(value) || 0 : value
@@ -53,22 +120,34 @@ export default function InterventionForm() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const newIntervention = {
-      ...formData,
-      id: `INT-${Date.now()}`,
-      dateDebut: new Date(formData.dateDebut),
-      dateFin: new Date(formData.dateFin),
-      status: 'planifiee' as const, // Using 'as const' to ensure type safety
-      validationsJournalieres: [],
-      take5Records: [],
-      documentsProgres: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      creerPar: user?.email || 'system',
-    };
+    if (isEditMode && interventionId) {
+      // Mode édition : mettre à jour l'intervention existante
+      updateIntervention(interventionId, {
+        ...formData,
+        dateDebut: new Date(formData.dateDebut),
+        dateFin: new Date(formData.dateFin),
+        modifiePar: user?.email || 'system',
+      });
+      navigate(`/interventions/${interventionId}`);
+    } else {
+      // Mode création : créer une nouvelle intervention
+      const newIntervention = {
+        ...formData,
+        id: `INT-${Date.now()}`,
+        dateDebut: new Date(formData.dateDebut),
+        dateFin: new Date(formData.dateFin),
+        status: 'planifiee' as const,
+        validationsJournalieres: [],
+        take5Records: [],
+        documentsProgres: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        creerPar: user?.email || 'system',
+      };
 
-    addIntervention(newIntervention);
-    navigate(`/interventions/${newIntervention.id}`);
+      addIntervention(newIntervention);
+      navigate(`/interventions/${newIntervention.id}`);
+    }
   };
 
   return (
@@ -86,6 +165,46 @@ export default function InterventionForm() {
               value={formData.reference}
               onChange={handleChange}
               required
+            />
+          </div>
+
+          {/* Permis de travail */}
+          <div className="space-y-2">
+            <Label htmlFor="permisId">Permis de travail</Label>
+            <Select
+              name="permisId"
+              value={formData.permisId}
+              onChange={(e) => handleChange(e)}
+              options={[
+                { value: '', label: 'Sélectionner un permis (optionnel)' },
+                ...permisGeneraux
+                  .filter(p => p.status === 'valide' || p.status === 'en_cours')
+                  .map(p => ({
+                    value: p.id,
+                    label: `${p.numero || p.reference} - ${p.intituleTravaux}`
+                  }))
+              ]}
+              placeholder="Sélectionner un permis"
+            />
+          </div>
+
+          {/* Plan de prévention */}
+          <div className="space-y-2">
+            <Label htmlFor="planPreventionId">Plan de prévention</Label>
+            <Select
+              name="planPreventionId"
+              value={formData.planPreventionId}
+              onChange={(e) => handleChange(e)}
+              options={[
+                { value: '', label: 'Sélectionner un plan (optionnel)' },
+                ...plansPrevention
+                  .filter(p => p.status === 'valide')
+                  .map(p => ({
+                    value: p.id,
+                    label: `${p.reference} - ${p.natureIntervention}`
+                  }))
+              ]}
+              placeholder="Sélectionner un plan"
             />
           </div>
 
@@ -249,7 +368,7 @@ export default function InterventionForm() {
             Annuler
           </Button>
           <Button type="submit">
-            Créer l'intervention
+            {isEditMode ? 'Enregistrer les modifications' : 'Créer l\'intervention'}
           </Button>
         </div>
       </form>

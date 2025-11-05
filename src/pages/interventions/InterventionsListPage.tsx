@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useInterventionStore } from '@/store/interventionStore';
 import { useAuthStore } from '@/store/authStore';
+import { usePermitStore } from '@/store/permitStore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -11,6 +12,7 @@ import {
   Clipboard,
   Plus,
   Eye,
+  Edit,
   Calendar,
   MapPin,
   Users,
@@ -18,6 +20,8 @@ import {
   CheckCircle2,
   Clock,
   WifiOff,
+  FileText,
+  Shield,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import type { InterventionStatus } from '@/types';
@@ -25,6 +29,7 @@ import type { InterventionStatus } from '@/types';
 export default function InterventionsListPage() {
   const { interventions } = useInterventionStore();
   const { user, canAccessFeature } = useAuthStore();
+  const { permisGeneraux, plansPrevention } = usePermitStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -300,6 +305,28 @@ export default function InterventionsListPage() {
 
                           <p className="text-gray-600 mb-3">{intervention.description}</p>
 
+                          {/* Informations sur permis et plan de prévention */}
+                          {(intervention.permisReference || intervention.planPreventionId) && (
+                            <div className="mb-3 p-2 bg-blue-50 rounded text-xs">
+                              {intervention.permisReference && (
+                                <div className="flex items-center gap-1 text-blue-700">
+                                  <FileText className="h-3 w-3" />
+                                  <span className="font-medium">Permis:</span>
+                                  <span>{intervention.permisReference}</span>
+                                </div>
+                              )}
+                              {intervention.planPreventionId && (
+                                <div className="flex items-center gap-1 text-blue-700 mt-1">
+                                  <Shield className="h-3 w-3" />
+                                  <span className="font-medium">Plan de prévention:</span>
+                                  <span>
+                                    {plansPrevention.find(p => p.id === intervention.planPreventionId)?.reference || 'N/A'}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                             <div className="flex items-center gap-2 text-gray-600">
                               <MapPin className="h-4 w-4" />
@@ -364,7 +391,18 @@ export default function InterventionsListPage() {
                           )}
                         </div>
 
-                        <div className="ml-4">
+                        <div className="ml-4 flex gap-2">
+                          {canAccessFeature('create_interventions') && 
+                           (intervention.status === 'planifiee' || intervention.status === 'suspendue') && (
+                            <Link to={`/interventions/${intervention.id}/edit`}>
+                              <button
+                                className="p-2 text-gray-600 hover:text-gray-700 hover:bg-gray-50 rounded transition-colors"
+                                title="Modifier"
+                              >
+                                <Edit className="h-5 w-5" />
+                              </button>
+                            </Link>
+                          )}
                           <Link to={`/interventions/${intervention.id}`}>
                             <button
                               className="p-2 text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded transition-colors"

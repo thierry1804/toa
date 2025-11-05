@@ -34,10 +34,10 @@ export default function Sidebar() {
       path: '/dashboard',
     },
     {
-      label: t('nav.permits'),
-      icon: FileText,
-      path: '/permits',
-      permission: 'view_permits',
+      label: t('nav.interventions'),
+      icon: Clipboard,
+      path: '/interventions',
+      permission: 'view_interventions',
     },
     {
       label: t('nav.prevention'),
@@ -46,10 +46,10 @@ export default function Sidebar() {
       permission: 'view_prevention_plans',
     },
     {
-      label: t('nav.interventions'),
-      icon: Clipboard,
-      path: '/interventions',
-      permission: 'view_interventions',
+      label: t('nav.permits'),
+      icon: FileText,
+      path: '/permits',
+      permission: 'view_permits',
     },
     {
       label: t('nav.statistics'),
@@ -82,10 +82,14 @@ export default function Sidebar() {
       <div className="h-16 border-b border-gray-200 flex items-center justify-between px-4">
         {!collapsed && (
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-              <Shield className="h-5 w-5 text-white" />
+            <div className="w-auto h-8 flex items-center justify-center">
+              <img
+                src="/assets/images/logo_scroll.webp"
+                alt="TOA Logo"
+                className="h-8"
+              />
             </div>
-            <span className="font-bold text-gray-900">TOA HSE</span>
+
           </div>
         )}
         <button

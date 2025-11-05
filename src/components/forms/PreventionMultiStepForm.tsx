@@ -6,9 +6,15 @@ import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Select from '@/components/ui/Select';
 import Checkbox from '@/components/ui/Checkbox';
-import { AlertTriangle, AlertCircle, HardHat, User, MapPin, Calendar, FileText, Shield, Users, AlertOctagon } from 'lucide-react';
+import { AlertTriangle, AlertCircle, HardHat, User, MapPin, Calendar, FileText, Shield, Users, AlertOctagon, Settings } from 'lucide-react';
 
 // Define schemas for each step
+const step0Schema = z.object({
+  processType: z.enum(['nouveau_site', 'vie_reseau', 'infrastructure', 'maintenance', 'energie'], {
+    errorMap: () => ({ message: 'Veuillez sélectionner un type de process' }),
+  }),
+});
+
 const step1Schema = z.object({
   entreprisePrestataire: z.string().min(1, 'Entreprise requise'),
   siret: z.string().min(14, 'SIRET invalide').max(14, 'SIRET invalide'),
@@ -16,45 +22,18 @@ const step1Schema = z.object({
   fonctionPrestataire: z.string().min(1, 'Fonction requise'),
 });
 
+// Nouvelle étape PROJET (fusion de 3, 4, 5)
 const step2Schema = z.object({
-  maitreOuvrage: z.string().min(1, 'Maître d\'ouvrage requis'),
-  representantMaitreOuvrage: z.string().min(1, 'Représentant requis'),
-  contactMaitreOuvrage: z.string().min(1, 'Contact requis'),
-  emailMaitreOuvrage: z.string().email('Email invalide').or(z.literal('')),
+  nomProjet: z.string().min(1, 'Nom du projet requis'),
+  sites: z.array(z.object({
+    codeSite: z.string().min(1, 'Code du site requis'),
+    nomSite: z.string().min(1, 'Nom du site requis'),
+  })).min(1, 'Au moins un site est requis').max(400, 'Maximum 400 sites'),
+  dateDebut: z.string().min(1, 'Date de début requise'),
+  dateFin: z.string().min(1, 'Date de fin requise'),
 });
 
 const step3Schema = z.object({
-  nomSite: z.string().min(1, 'Nom du site requis'),
-  adresseSite: z.string().min(1, 'Adresse requise'),
-  codePostal: z.string().regex(/^[0-9]{5}$/, 'Code postal invalide'),
-  ville: z.string().min(1, 'Ville requise'),
-  coordonneesGPS: z.string().optional(),
-  fokontany: z.string().min(1, 'Fokontany requis'),
-  commune: z.string().min(1, 'Commune requise'),
-  district: z.string().min(1, 'District requis'),
-  region: z.string().min(1, 'Région requise'),
-  situationGeographique: z.enum(['en_ville', 'rurale', 'sur_montagne', 'autre']),
-  situationGeographiqueAutre: z.string().optional(),
-});
-
-const step4Schema = z.object({
-  natureIntervention: z.string().min(1, 'Nature requise'),
-  descriptionTravaux: z.string().min(10, 'Description trop courte (min 10 caractères)'),
-  nombreIntervenants: z.number().min(1, 'Minimum 1 intervenant'),
-  dureeEstimee: z.number().min(1, 'Durée estimée requise'),
-});
-
-const step5Schema = z.object({
-  dateDebut: z.string().min(1, 'Date de début requise'),
-  dateFin: z.string().min(1, 'Date de fin requise'),
-  horairesTravail: z.object({
-    debut: z.string().min(1, 'Heure de début requise'),
-    fin: z.string().min(1, 'Heure de fin requise'),
-    pause: z.string().min(1, 'Heure de pause requise'),
-  }),
-});
-
-const step6Schema = z.object({
   risquesIdentifies: z.array(z.object({
     id: z.string(),
     categorie: z.string().min(1),
@@ -67,35 +46,14 @@ const step6Schema = z.object({
   })).min(1, 'Au moins un risque doit être identifié'),
 });
 
-const step7Schema = z.object({
-  equipementsSecurite: z.array(z.object({
-    type: z.string().min(1, 'Type d\'équipement requis'),
-    quantite: z.number().min(1, 'Quantité requise'),
-    conforme: z.boolean(),
-  })).min(1, 'Au moins un équipement doit être spécifié'),
-});
-
-const step8Schema = z.object({
-  consignesSecurite: z.string().min(10, 'Les consignes de sécurité sont requises'),
-  consignesUrgence: z.string().min(10, 'Les consignes d\'urgence sont requises'),
-  contactsUrgence: z.string().min(1, 'Les contacts d\'urgence sont requis'),
-});
-
-const step9Schema = z.object({
-  formationSecurite: z.boolean(),
-  dateFormation: z.string().optional(),
-  nomFormateur: z.string().optional(),
-  commentaires: z.string().optional(),
-});
-
-const step10Schema = z.object({
+const step4Schema = z.object({
   documentsFournis: z.array(z.string()).min(1, 'Au moins un document doit être fourni'),
   accordResponsable: z.boolean().refine(val => val === true, {
     message: 'Vous devez accepter les conditions',
   }),
 });
 
-const step11Schema = z.object({
+const step5Schema = z.object({
   confirmationFinale: z.boolean().refine(val => val === true, {
     message: 'Vous devez confirmer les informations',
   }),
@@ -103,17 +61,12 @@ const step11Schema = z.object({
 
 // Combine all schemas for final validation
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const preventionPlanSchema = step1Schema
+const preventionPlanSchema = step0Schema
+  .merge(step1Schema)
   .merge(step2Schema)
   .merge(step3Schema)
   .merge(step4Schema)
-  .merge(step5Schema)
-  .merge(step6Schema)
-  .merge(step7Schema)
-  .merge(step8Schema)
-  .merge(step9Schema)
-  .merge(step10Schema)
-  .merge(step11Schema);
+  .merge(step5Schema);
 
 type PreventionPlan = z.infer<typeof preventionPlanSchema>;
 
@@ -376,6 +329,130 @@ const documentOptions = [
   { value: 'autres', label: 'Autres documents' },
 ];
 
+// Composant pour l'étape PROJET
+const ProjetStep = ({ formData, updateFormData }: { formData: Partial<PreventionPlan>; updateFormData: (data: Partial<PreventionPlan>) => void }) => {
+  const sites = (formData.sites || []) as Array<{ codeSite: string; nomSite: string }>;
+  
+  const addSite = () => {
+    if (sites.length < 400) {
+      updateFormData({ 
+        sites: [...sites, { codeSite: '', nomSite: '' }] 
+      });
+    }
+  };
+  
+  const removeSite = (index: number) => {
+    const updated = sites.filter((_, i) => i !== index);
+    updateFormData({ sites: updated });
+  };
+  
+  const updateSite = (index: number, field: 'codeSite' | 'nomSite', value: string) => {
+    const updated = sites.map((site, i) => 
+      i === index ? { ...site, [field]: value } : site
+    );
+    updateFormData({ sites: updated });
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Nom du projet */}
+      <div className="space-y-2">
+        <Input
+          name="nomProjet"
+          label="Nom du projet"
+          required
+          value={formData.nomProjet || ''}
+          onChange={(e) => updateFormData({ nomProjet: e.target.value })}
+        />
+      </div>
+
+      {/* Dates */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Input
+          name="dateDebut"
+          label="Date de début"
+          type="date"
+          required
+          value={formData.dateDebut || ''}
+          onChange={(e) => updateFormData({ dateDebut: e.target.value })}
+        />
+        <Input
+          name="dateFin"
+          label="Date de fin"
+          type="date"
+          required
+          value={formData.dateFin || ''}
+          onChange={(e) => updateFormData({ dateFin: e.target.value })}
+        />
+      </div>
+
+      {/* Sites */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h4 className="font-medium">Sites ({sites.length}/400)</h4>
+          {sites.length < 400 && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={addSite}
+            >
+              + Ajouter un site
+            </Button>
+          )}
+        </div>
+
+        {sites.length === 0 && (
+          <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center">
+            <p className="text-gray-500 mb-2">Aucun site ajouté</p>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={addSite}
+            >
+              Ajouter le premier site
+            </Button>
+          </div>
+        )}
+
+        <div className="space-y-3 max-h-96 overflow-y-auto">
+          {sites.map((site, index) => (
+            <div key={index} className="border rounded-lg p-4 space-y-3">
+              <div className="flex items-center justify-between mb-2">
+                <h5 className="font-medium text-sm">Site {index + 1}</h5>
+                {sites.length > 1 && (
+                  <button
+                    type="button"
+                    className="text-red-500 text-sm hover:text-red-700"
+                    onClick={() => removeSite(index)}
+                  >
+                    Supprimer
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  name={`sites.${index}.codeSite`}
+                  label="Code du site"
+                  required
+                  value={site.codeSite}
+                  onChange={(e) => updateSite(index, 'codeSite', e.target.value)}
+                />
+                <Input
+                  name={`sites.${index}.nomSite`}
+                  label="Nom du site"
+                  required
+                  value={site.nomSite}
+                  onChange={(e) => updateSite(index, 'nomSite', e.target.value)}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function PreventionMultiStepForm({ onSubmit, onCancel, initialData = {} }: PreventionMultiStepFormProps) {
   const [formData, setFormData] = useState<Partial<PreventionPlan>>(initialData);
 
@@ -392,6 +469,52 @@ export default function PreventionMultiStepForm({ onSubmit, onCancel, initialDat
   };
 
   const steps = [
+    // Step 0: Sélection du Process
+    {
+      id: 'process',
+      title: 'Type de Process',
+      description: 'Sélectionnez le type de process pour ce plan de prévention',
+      icon: Settings,
+      component: (
+        <div className="space-y-4">
+          <div className="bg-blue-50 p-4 rounded-lg mb-4">
+            <p className="text-sm text-blue-800">
+              Veuillez sélectionner le type de process correspondant à votre projet.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              { value: 'nouveau_site', label: 'Nouveau site', icon: MapPin },
+              { value: 'vie_reseau', label: 'Vie de réseau', icon: HardHat },
+              { value: 'infrastructure', label: 'Infrastructure', icon: Shield },
+              { value: 'maintenance', label: 'Maintenance', icon: Settings },
+              { value: 'energie', label: 'Energie', icon: AlertTriangle },
+            ].map((option) => {
+              const Icon = option.icon;
+              return (
+                <div
+                  key={option.value}
+                  className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                    formData.processType === option.value
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  }`}
+                  onClick={() => updateFormData({ processType: option.value as any })}
+                >
+                  <div className="flex items-center gap-3">
+                    <Icon className={`h-6 w-6 ${
+                      formData.processType === option.value ? 'text-blue-600' : 'text-gray-400'
+                    }`} />
+                    <span className="font-medium">{option.label}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ),
+      validationSchema: step0Schema,
+    },
     // Step 1: Entreprise Prestataire
     {
       id: 'entreprise',
@@ -427,334 +550,25 @@ export default function PreventionMultiStepForm({ onSubmit, onCancel, initialDat
       ),
       validationSchema: step1Schema,
     },
-    // Step 2: Maître d'Ouvrage
+    // Step 2: PROJET (fusion de Localisation, Description, Planning)
     {
-      id: 'maitre-ouvrage',
-      title: 'Maître d\'Ouvrage',
-      description: 'Informations sur le maître d\'ouvrage',
-      icon: User,
-      component: (
-        <div className="space-y-4">
-          <Input
-            name="maitreOuvrage"
-            label="Maître d'ouvrage"
-            required
-          />
-          <Input
-            name="representantMaitreOuvrage"
-            label="Représentant"
-            required
-          />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              name="contactMaitreOuvrage"
-              label="Contact"
-              required
-            />
-            <Input
-              name="emailMaitreOuvrage"
-              label="Email"
-              type="email"
-            />
-          </div>
-        </div>
-      ),
+      id: 'projet',
+      title: 'PROJET',
+      description: 'Informations sur le projet, les sites et les dates',
+      icon: Calendar,
+      component: <ProjetStep formData={formData} updateFormData={updateFormData} />,
       validationSchema: step2Schema,
     },
-    // Step 3: Localisation
-    {
-      id: 'localisation',
-      title: 'Localisation',
-      description: 'Informations sur le site d\'intervention',
-      icon: MapPin,
-      component: (
-        <div className="space-y-4">
-          <Input
-            name="nomSite"
-            label="Nom du site"
-            required
-          />
-          <Input
-            name="adresseSite"
-            label="Adresse"
-            required
-          />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Input
-              name="codePostal"
-              label="Code postal"
-              required
-            />
-            <div className="md:col-span-2">
-              <Input
-                name="ville"
-                label="Ville"
-                required
-              />
-            </div>
-          </div>
-          <Input
-            name="coordonneesGPS"
-            label="Coordonnées GPS (optionnel)"
-            placeholder="Ex: 48.8566, 2.3522"
-          />
-        </div>
-      ),
-      validationSchema: step3Schema,
-    },
-    // Step 4: Description des Travaux
-    {
-      id: 'description-travaux',
-      title: 'Description des Travaux',
-      description: 'Détails de l\'intervention',
-      icon: FileText,
-      component: (
-        <div className="space-y-4">
-          <Input
-            name="natureIntervention"
-            label="Nature de l'intervention"
-            required
-          />
-          <Textarea
-            name="descriptionTravaux"
-            label="Description détaillée des travaux"
-            required
-            rows={4}
-          />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              name="nombreIntervenants"
-              label="Nombre d'intervenants"
-              type="number"
-              min={1}
-              required
-            />
-            <Input
-              name="dureeEstimee"
-              label="Durée estimée (heures)"
-              type="number"
-              min={1}
-              required
-            />
-          </div>
-        </div>
-      ),
-      validationSchema: step4Schema,
-    },
-    // Step 5: Planning
-    {
-      id: 'planning',
-      title: 'Planning',
-      description: 'Dates et horaires des travaux',
-      icon: Calendar,
-      component: (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              name="dateDebut"
-              label="Date de début"
-              type="date"
-              required
-            />
-            <Input
-              name="dateFin"
-              label="Date de fin"
-              type="date"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">Horaires de travail</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Input
-                name="horairesTravail.debut"
-                label="Début"
-                type="time"
-                required
-              />
-              <Input
-                name="horairesTravail.fin"
-                label="Fin"
-                type="time"
-                required
-              />
-              <Input
-                name="horairesTravail.pause"
-                label="Pause"
-                type="time"
-                required
-              />
-            </div>
-          </div>
-        </div>
-      ),
-      validationSchema: step5Schema,
-    },
-    // Step 6: Risques Identifiés
+    // Step 3: Risques Identifiés
     {
       id: 'risques',
       title: 'Risques Identifiés',
       description: 'Identification des risques potentiels',
       icon: AlertTriangle,
       component: <RisquesIdentifies formData={formData} updateFormData={updateFormData} />,
-      validationSchema: step6Schema,
+      validationSchema: step3Schema,
     },
-    // Step 7: Équipements de Sécurité
-    {
-      id: 'equipements',
-      title: 'Équipements de Sécurité',
-      description: 'Équipements nécessaires pour la sécurité',
-      icon: Shield,
-      component: (
-        <div className="space-y-4">
-          <div className="space-y-4">
-            {formData.equipementsSecurite?.map((_, index) => (
-              <div key={index} className="border rounded-lg p-4 space-y-4">
-                <div className="flex justify-between items-center">
-                  <h5 className="font-medium">Équipement {index + 1}</h5>
-                  {index > 0 && (
-                    <button
-                      type="button"
-                      className="text-red-500 text-sm"
-                      onClick={() => {
-                        const updatedEquipements = [...(formData.equipementsSecurite || [])];
-                        updatedEquipements.splice(index, 1);
-                        updateFormData({ equipementsSecurite: updatedEquipements });
-                      }}
-                    >
-                      Supprimer
-                    </button>
-                  )}
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input
-                    name={`equipementsSecurite.${index}.type`}
-                    label="Type d'équipement"
-                    required
-                  />
-                  <Input
-                    name={`equipementsSecurite.${index}.quantite`}
-                    label="Quantité"
-                    type="number"
-                    min={1}
-                    required
-                  />
-                </div>
-                <Checkbox
-                  name={`equipementsSecurite.${index}.conforme`}
-                  label="Équipement conforme aux normes"
-                  defaultChecked={true}
-                />
-              </div>
-            ))}
-            
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                const updatedEquipements = [...(formData.equipementsSecurite || []), {
-                  type: '',
-                  quantite: 1,
-                  conforme: true
-                }];
-                updateFormData({ equipementsSecurite: updatedEquipements });
-              }}
-            >
-              Ajouter un équipement
-            </Button>
-          </div>
-        </div>
-      ),
-      validationSchema: step7Schema,
-    },
-    // Step 8: Consignes de Sécurité
-    {
-      id: 'consignes',
-      title: 'Consignes de Sécurité',
-      description: 'Consignes à respecter pendant les travaux',
-      icon: AlertCircle,
-      component: (
-        <div className="space-y-6">
-          <div className="space-y-4">
-            <h4 className="font-medium">Consignes générales de sécurité</h4>
-            <Textarea
-              name="consignesSecurite"
-              label="Consignes à respecter"
-              required
-              rows={4}
-              placeholder="Ex: Port des EPI obligatoire, zone sécurisée, etc."
-            />
-          </div>
-          
-          <div className="space-y-4">
-            <h4 className="font-medium">Consignes en cas d'urgence</h4>
-            <Textarea
-              name="consignesUrgence"
-              label="Procédures d'urgence"
-              required
-              rows={4}
-              placeholder="Ex: Numéros d'urgence, points de rassemblement, etc."
-            />
-          </div>
-          
-          <div className="space-y-4">
-            <h4 className="font-medium">Contacts d'urgence</h4>
-            <Textarea
-              name="contactsUrgence"
-              label="Personnes à contacter en cas d'urgence"
-              required
-              rows={3}
-              placeholder="Ex: Responsable sécurité: 01 23 45 67 89, SAMU: 15, Pompiers: 18, etc."
-            />
-          </div>
-        </div>
-      ),
-      validationSchema: step8Schema,
-    },
-    // Step 9: Formation et Compétences
-    {
-      id: 'formation',
-      title: 'Formation et Compétences',
-      description: 'Formation des intervenants',
-      icon: Users,
-      component: (
-        <div className="space-y-6">
-          <div className="space-y-4">
-            <Checkbox
-              name="formationSecurite"
-              label="Les intervenants ont-ils reçu une formation à la sécurité spécifique à cette intervention ?"
-            />
-            
-            {formData.formationSecurite && (
-              <div className="space-y-4 pl-6 border-l-2 border-gray-200">
-                <Input
-                  name="dateFormation"
-                  label="Date de la formation"
-                  type="date"
-                />
-                <Input
-                  name="nomFormateur"
-                  label="Nom du formateur"
-                  placeholder="Nom du formateur ou de l'organisme"
-                />
-              </div>
-            )}
-          </div>
-          
-          <div className="space-y-4">
-            <h4 className="font-medium">Commentaires additionnels</h4>
-            <Textarea
-              name="commentaires"
-              label="Remarques ou informations complémentaires"
-              rows={3}
-              placeholder="Ex: Compétences particulières requises, habilitations spécifiques, etc."
-            />
-          </div>
-        </div>
-      ),
-      validationSchema: step9Schema,
-    },
-    // Step 10: Documents et Validation
+    // Step 4: Documents et Validation
     {
       id: 'documents',
       title: 'Documents et Validation',
@@ -806,9 +620,9 @@ export default function PreventionMultiStepForm({ onSubmit, onCancel, initialDat
           </div>
         </div>
       ),
-      validationSchema: step10Schema,
+      validationSchema: step4Schema,
     },
-    // Step 11: Confirmation
+    // Step 5: Confirmation (ancienne étape 11)
     {
       id: 'confirmation',
       title: 'Confirmation',
@@ -827,6 +641,19 @@ export default function PreventionMultiStepForm({ onSubmit, onCancel, initialDat
           <div className="space-y-4">
             <h4 className="font-medium">Récapitulatif</h4>
             <div className="bg-white border rounded-lg divide-y">
+              {formData.processType && (
+                <div className="p-4">
+                  <h5 className="font-medium text-gray-900">Type de Process</h5>
+                  <p className="text-sm text-gray-600">
+                    {formData.processType === 'nouveau_site' && 'Nouveau site'}
+                    {formData.processType === 'vie_reseau' && 'Vie de réseau'}
+                    {formData.processType === 'infrastructure' && 'Infrastructure'}
+                    {formData.processType === 'maintenance' && 'Maintenance'}
+                    {formData.processType === 'energie' && 'Energie'}
+                  </p>
+                </div>
+              )}
+              
               <div className="p-4">
                 <h5 className="font-medium text-gray-900">Entreprise Prestataire</h5>
                 <p className="text-sm text-gray-600">{formData.entreprisePrestataire} - {formData.siret}</p>
@@ -835,22 +662,35 @@ export default function PreventionMultiStepForm({ onSubmit, onCancel, initialDat
                 </p>
               </div>
               
-              <div className="p-4">
-                <h5 className="font-medium text-gray-900">Intervention</h5>
-                <p className="text-sm text-gray-600">{formData.natureIntervention}</p>
-                <p className="text-sm text-gray-600">{formData.nombreIntervenants} intervenant(s)</p>
-                <p className="text-sm text-gray-600">
-                  Du {formData.dateDebut} au {formData.dateFin}
-                </p>
-              </div>
+              {formData.nomProjet && (
+                <div className="p-4">
+                  <h5 className="font-medium text-gray-900">Projet</h5>
+                  <p className="text-sm text-gray-600 font-semibold">{formData.nomProjet}</p>
+                  <p className="text-sm text-gray-600">
+                    Du {formData.dateDebut} au {formData.dateFin}
+                  </p>
+                </div>
+              )}
               
-              <div className="p-4">
-                <h5 className="font-medium text-gray-900">Localisation</h5>
-                <p className="text-sm text-gray-600">{formData.nomSite}</p>
-                <p className="text-sm text-gray-600">
-                  {formData.adresseSite}, {formData.codePostal} {formData.ville}
-                </p>
-              </div>
+              {(formData.sites && (formData.sites as any[]).length > 0) && (
+                <div className="p-4">
+                  <h5 className="font-medium text-gray-900">
+                    Sites ({(formData.sites as any[]).length})
+                  </h5>
+                  <div className="mt-2 space-y-1">
+                    {(formData.sites as any[]).slice(0, 5).map((site: any, index: number) => (
+                      <p key={index} className="text-sm text-gray-600">
+                        • {site.codeSite} - {site.nomSite}
+                      </p>
+                    ))}
+                    {(formData.sites as any[]).length > 5 && (
+                      <p className="text-sm text-gray-500">
+                        ... et {(formData.sites as any[]).length - 5} autre(s) site(s)
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
               
               {(formData.risquesIdentifies || []).length > 0 && (
                 <div className="p-4">
@@ -883,7 +723,7 @@ export default function PreventionMultiStepForm({ onSubmit, onCancel, initialDat
           </div>
         </div>
       ),
-      validationSchema: step11Schema,
+      validationSchema: step5Schema,
     },
   ];
 

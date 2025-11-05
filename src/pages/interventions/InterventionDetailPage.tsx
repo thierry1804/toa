@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useInterventionStore } from '@/store/interventionStore';
 import { useAuthStore } from '@/store/authStore';
+import { usePermitStore } from '@/store/permitStore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
@@ -19,6 +20,7 @@ import {
   Shield,
   Plus,
   Eye,
+  Edit,
   WifiOff,
   XCircle,
   Play,
@@ -37,6 +39,7 @@ export default function InterventionDetailPage() {
     cloturerIntervention,
   } = useInterventionStore();
   const { user, canAccessFeature } = useAuthStore();
+  const { permisGeneraux, plansPrevention } = usePermitStore();
 
   const intervention = interventions.find((i) => i.id === id);
 
@@ -181,6 +184,17 @@ export default function InterventionDetailPage() {
         </div>
 
         <div className="flex gap-2">
+          {/* Bouton Modifier */}
+          {(intervention.status === 'planifiee' || intervention.status === 'suspendue') && 
+           canAccessFeature('create_interventions') && (
+            <Link to={`/interventions/${intervention.id}/edit`}>
+              <Button variant="outline">
+                <Edit className="h-4 w-4 mr-2" />
+                Modifier
+              </Button>
+            </Link>
+          )}
+
           {/* Bouton Démarrer pour statut planifiee */}
           {intervention.status === 'planifiee' && canAccessFeature('start_interventions') && (
             <Button onClick={handleDemarrer}>
@@ -291,6 +305,84 @@ export default function InterventionDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Informations sur permis et plan de prévention */}
+      {(intervention.permisId || intervention.planPreventionId) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Documents liés</CardTitle>
+            <CardDescription>Permis de travail et plan de prévention associés</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {intervention.permisId && (() => {
+                const permis = permisGeneraux.find(p => p.id === intervention.permisId);
+                return permis ? (
+                  <div className="p-4 border border-blue-200 rounded-lg bg-blue-50">
+                    <div className="flex items-start gap-3">
+                      <FileText className="h-6 w-6 text-blue-600 mt-1" />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-semibold text-gray-900">Permis de travail</h4>
+                          <Link to={`/permits/${permis.id}`}>
+                            <Button variant="ghost" size="sm">
+                              <Eye className="h-4 w-4 mr-1" />
+                              Voir
+                            </Button>
+                          </Link>
+                        </div>
+                        <p className="text-sm text-gray-700 mb-1">
+                          <span className="font-medium">Référence:</span> {permis.numero || permis.reference}
+                        </p>
+                        <p className="text-sm text-gray-700 mb-1">
+                          <span className="font-medium">Intitulé:</span> {permis.intituleTravaux}
+                        </p>
+                        <p className="text-sm text-gray-700">
+                          <span className="font-medium">Statut:</span>{' '}
+                          <Badge variant={permis.status === 'valide' ? 'success' : 'primary'}>
+                            {permis.status}
+                          </Badge>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : null;
+              })()}
+              
+              {intervention.planPreventionId && (() => {
+                const plan = plansPrevention.find(p => p.id === intervention.planPreventionId);
+                return plan ? (
+                  <div className="p-4 border border-green-200 rounded-lg bg-green-50">
+                    <div className="flex items-start gap-3">
+                      <Shield className="h-6 w-6 text-green-600 mt-1" />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-semibold text-gray-900">Plan de prévention</h4>
+                          <Link to={`/prevention/${plan.id}`}>
+                            <Button variant="ghost" size="sm">
+                              <Eye className="h-4 w-4 mr-1" />
+                              Voir
+                            </Button>
+                          </Link>
+                        </div>
+                        <p className="text-sm text-gray-700 mb-1">
+                          <span className="font-medium">Référence:</span> {plan.reference}
+                        </p>
+                        <p className="text-sm text-gray-700 mb-1">
+                          <span className="font-medium">Nature:</span> {plan.natureIntervention}
+                        </p>
+                        <p className="text-sm text-gray-700">
+                          <span className="font-medium">Prestataire:</span> {plan.entreprisePrestataire}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : null;
+              })()}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Barre de progression */}
       <Card>

@@ -46,6 +46,7 @@ function App() {
             <Route path="interventions" element={<InterventionsListPage />} />
             <Route path="interventions/new" element={<InterventionFormPage />} />
             <Route path="interventions/:id" element={<InterventionDetailPage />} />
+            <Route path="interventions/:id/edit" element={<InterventionFormPage />} />
             <Route path="users" element={<UsersListPage />} />
             <Route path="users/new" element={<UserFormPage />} />
             <Route path="users/:id/edit" element={<UserFormPage />} />

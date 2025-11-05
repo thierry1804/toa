@@ -39,6 +39,8 @@ const rolePermissions: Record<UserRole, string[]> = {
     'edit_prevention_plans',
     'validate_prevention_plans_chef',
     'view_interventions',
+    'create_interventions',
+    'edit_interventions',
     'start_interventions',
     'suspend_interventions',
     'resume_interventions',

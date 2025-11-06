@@ -70,6 +70,7 @@ export default function UserFormPage() {
     { value: 'chef_projet', label: t('roles.chef_projet') },
     { value: 'hse', label: t('roles.hse') },
     { value: 'prestataire', label: t('roles.prestataire') },
+    { value: 'collaborateur', label: t('roles.collaborateur') },
     { value: 'dg', label: t('roles.dg') },
   ];
 

@@ -5,6 +5,7 @@ export type UserRole =
   | 'chef_projet'
   | 'hse'
   | 'prestataire'
+  | 'collaborateur'
   | 'dg';
 
 export interface User {

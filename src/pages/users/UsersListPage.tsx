@@ -62,6 +62,7 @@ export default function UsersListPage() {
       chef_projet: { label: t('roles.chef_projet'), variant: 'primary' as const, icon: Briefcase },
       hse: { label: t('roles.hse'), variant: 'success' as const, icon: Shield },
       prestataire: { label: t('roles.prestataire'), variant: 'secondary' as const, icon: Building2 },
+      collaborateur: { label: t('roles.collaborateur'), variant: 'secondary' as const, icon: Users },
       dg: { label: t('roles.dg'), variant: 'primary' as const, icon: Briefcase },
     };
 

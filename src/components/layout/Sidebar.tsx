@@ -11,6 +11,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  KeyRound,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -62,6 +63,12 @@ export default function Sidebar() {
       icon: Users,
       path: '/users',
       permission: 'view_users',
+    },
+    {
+      label: t('nav.access'),
+      icon: KeyRound,
+      path: '/access',
+      permission: 'manage_access', // Seul le super_admin a cette permission
     },
   ];
 

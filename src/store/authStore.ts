@@ -13,7 +13,7 @@ interface AuthState {
 
 // Permissions par rôle
 const rolePermissions: Record<UserRole, string[]> = {
-  super_admin: ['*'], // Tous les accès
+  super_admin: ['*', 'manage_access'], // Tous les accès + gestion des accès
   admin: [
     'view_dashboard',
     'view_permits',
@@ -32,19 +32,12 @@ const rolePermissions: Record<UserRole, string[]> = {
   chef_projet: [
     'view_dashboard',
     'view_permits',
-    'create_permits',
     'validate_permits_chef',
     'view_prevention_plans',
-    'create_prevention_plans',
-    'edit_prevention_plans',
-    'validate_prevention_plans_chef',
-    'view_interventions',
-    'create_interventions',
-    'edit_interventions',
-    'start_interventions',
-    'suspend_interventions',
-    'resume_interventions',
-    'validate_interventions',
+    'validate_prevention_plan', // Validation Plan de prévention seulement
+    'modify_planning', // Modification du Planning seulement
+    'view_planning',
+    'view_all_data', // Lecture toutes les données seulement
     'view_statistics',
   ],
   hse: [
@@ -55,6 +48,8 @@ const rolePermissions: Record<UserRole, string[]> = {
     'view_prevention_plans',
     'validate_prevention_plans',
     'validate_prevention_plans_hse',
+    'modify_fields', // Modification champs et Validations
+    'modify_validations',
     'view_interventions',
     'start_interventions',
     'suspend_interventions',
@@ -64,6 +59,8 @@ const rolePermissions: Record<UserRole, string[]> = {
     'review_take5',
     'close_interventions',
     'view_risks',
+    'view_all_data', // Lecture et exportation toutes les données
+    'export_all_data',
     'view_statistics',
   ],
   prestataire: [
@@ -72,7 +69,9 @@ const rolePermissions: Record<UserRole, string[]> = {
     'create_permits',
     'edit_my_permits',
     'view_my_prevention_plans',
-    'create_prevention_plans',
+    'create_prevention_plans', // Création demande PPHSE & PWHE
+    'create_pphse',
+    'create_pwhe',
     'edit_my_prevention_plans',
     'view_interventions',
     'create_interventions',
@@ -82,6 +81,17 @@ const rolePermissions: Record<UserRole, string[]> = {
     'validate_interventions',
     'submit_take5',
     'close_my_permits',
+    'view_own_data', // Lecture seulement
+    'export_own_validated_data', // Exportation PPH et PW valides liés à leur demande
+  ],
+  collaborateur: [
+    'view_dashboard_limited',
+    'view_my_permits',
+    'view_my_prevention_plans',
+    'create_prevention_plans', // Création demande PPHSE & PWHE
+    'create_pphse',
+    'create_pwhe',
+    'view_own_data', // Lecture seulement
   ],
   dg: [
     'view_dashboard',

@@ -5,7 +5,7 @@ import { useI18n } from '@/lib/i18n';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Shield, Globe } from 'lucide-react';
+import { Globe } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -52,8 +52,12 @@ export default function LoginPage() {
 
         <Card>
           <CardHeader className="space-y-4 text-center">
-            <div className="mx-auto w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center">
-              <Shield className="h-8 w-8 text-primary-600" />
+            <div className="w-auto h-16 flex items-center justify-center">
+              <img
+                src="/assets/images/logo_scroll.webp"
+                alt="TOA Logo"
+                className="h-8"
+              />
             </div>
             <div>
               <CardTitle>TowerCo of Africa</CardTitle>

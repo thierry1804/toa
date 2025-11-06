@@ -15,6 +15,7 @@ import InterventionFormPage from './pages/interventions/InterventionFormPage';
 import UsersListPage from './pages/users/UsersListPage';
 import UserFormPage from './pages/users/UserFormPage';
 import StatisticsPage from './pages/statistics/StatisticsPage';
+import AccessManagementPage from './pages/access/AccessManagementPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,6 +52,7 @@ function App() {
             <Route path="users/new" element={<UserFormPage />} />
             <Route path="users/:id/edit" element={<UserFormPage />} />
             <Route path="statistics" element={<StatisticsPage />} />
+            <Route path="access" element={<AccessManagementPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>

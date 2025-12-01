@@ -1,6 +1,3 @@
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { usePermitStore } from '@/store/permitStore';
 import { useAuthStore } from '@/store/authStore';
 import Input from '@/components/ui/Input';
@@ -8,50 +5,7 @@ import Select from '@/components/ui/Select';
 import Checkbox from '@/components/ui/Checkbox';
 import MultiStepForm from './MultiStepForm';
 import { AlertCircle } from 'lucide-react';
-
-// Schémas de validation pour chaque étape
-const step1Schema = z.object({
-  planPreventionId: z.string().min(1, 'Plan de prévention requis'),
-  intituleTravaux: z.string().min(5, 'Intitulé trop court (min 5 caractères)'),
-  localisation: z.string().min(1, 'Localisation requise'),
-  codeSite: z.string().min(1, 'Code site requis'),
-  contractant: z.string().min(1, 'Contractant requis'),
-  nombreIntervenants: z.number().min(1, 'Minimum 1 intervenant'),
-  dateDebut: z.string().min(1, 'Date de début requise'),
-  dateFin: z.string().min(1, 'Date de fin requise'),
-});
-
-const step2Schema = z.object({
-  travauxChaud: z.boolean(),
-  travauxHauteur: z.boolean(),
-  travauxElectrique: z.boolean(),
-  travauxEspaceConfine: z.boolean(),
-  travauxExcavation: z.boolean(),
-  travauxAutres: z.boolean(),
-  autresDescription: z.string().optional(),
-});
-
-const step3Schema = z.object({
-  evaluationRisquesValidee: z.boolean().refine((val) => val === true, {
-    message: 'L\'évaluation des risques doit être validée',
-  }),
-  personneCompetenteAssignee: z.boolean().refine((val) => val === true, {
-    message: 'Une personne compétente doit être assignée',
-  }),
-  mesuresPreventionMisesEnPlace: z.boolean().refine((val) => val === true, {
-    message: 'Les mesures de prévention doivent être mises en place',
-  }),
-  personnelInforme: z.boolean().refine((val) => val === true, {
-    message: 'Le personnel doit être informé',
-  }),
-  dangersControles: z.boolean().refine((val) => val === true, {
-    message: 'Les dangers doivent être contrôlés',
-  }),
-});
-
-type Step1Data = z.infer<typeof step1Schema>;
-type Step2Data = z.infer<typeof step2Schema>;
-type Step3Data = z.infer<typeof step3Schema>;
+import { useRef, useImperativeHandle, forwardRef, useState, useEffect } from 'react';
 
 interface PermitGeneralFormProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -61,9 +15,24 @@ interface PermitGeneralFormProps {
   initialData?: any;
 }
 
+// Interface pour exposer les méthodes de validation
+interface StepValidationHandle {
+  validate: () => Promise<boolean>;
+}
+
 export default function PermitGeneralForm({ onComplete, onCancel }: PermitGeneralFormProps) {
   const { plansPrevention } = usePermitStore();
   const { user } = useAuthStore();
+
+  // Refs pour stocker les fonctions de validation de chaque étape
+  const step1ValidationRef = useRef<StepValidationHandle>(null);
+  const step2ValidationRef = useRef<StepValidationHandle>(null);
+  const step3ValidationRef = useRef<StepValidationHandle>(null);
+  
+  // Refs pour stocker les données de chaque étape
+  const step1DataRef = useRef<any>(null);
+  const step2DataRef = useRef<any>(null);
+  const step3DataRef = useRef<any>(null);
 
   // Filtrer les plans validés
   const plansDisponibles = plansPrevention
@@ -74,38 +43,54 @@ export default function PermitGeneralForm({ onComplete, onCancel }: PermitGenera
     }));
 
   // Étape 1: Détails de l'intervention
-  const Step1Component = () => {
-    const {
-      register,
-      handleSubmit,
-      formState: { errors },
-    } = useForm<Step1Data>({
-      resolver: zodResolver(step1Schema),
-      defaultValues: {
-        planPreventionId: '',
-        intituleTravaux: '',
-        localisation: '',
-        codeSite: '',
-        contractant: user?.entreprise || '',
-        nombreIntervenants: 1,
-        dateDebut: '',
-        dateFin: '',
-      },
+  const Step1Component = forwardRef<StepValidationHandle>((_props, ref) => {
+    const formRef = useRef<HTMLFormElement>(null);
+    const [formData, setFormData] = useState({
+      planPreventionId: '',
+      intituleTravaux: '',
+      localisation: '',
+      codeSite: '',
+      contractant: user?.entreprise || '',
+      nombreIntervenants: 1,
+      dateDebut: '',
+      dateFin: '',
     });
 
-    const onSubmit = (data: Step1Data) => {
-      // Cette fonction sera appelée par le MultiStepForm
-      console.log('Step1 data:', data);
+    // Exposer la fonction de validation via ref
+    useImperativeHandle(ref, () => ({
+      validate: async () => {
+        // Validation HTML5 native uniquement
+        if (formRef.current) {
+          const isValid = formRef.current.checkValidity();
+          if (!isValid) {
+            formRef.current.reportValidity();
+          }
+          return isValid;
+        }
+        return true;
+      },
+    }));
+
+    const handleChange = (field: string, value: string | number) => {
+      const newData = { ...formData, [field]: value };
+      setFormData(newData);
+      step1DataRef.current = newData;
     };
+    
+    // Initialiser les données au montage
+    useEffect(() => {
+      step1DataRef.current = formData;
+    }, [formData]);
 
     return (
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form ref={formRef} className="space-y-4" noValidate>
         <Select
           label="Plan de Prévention Associé *"
-          {...register('planPreventionId')}
-          error={errors.planPreventionId?.message}
+          value={formData.planPreventionId}
+          onChange={(e) => handleChange('planPreventionId', e.target.value)}
           options={plansDisponibles}
           placeholder="Sélectionner un plan de prévention validé"
+          required
         />
 
         {plansDisponibles.length === 0 && (
@@ -125,39 +110,45 @@ export default function PermitGeneralForm({ onComplete, onCancel }: PermitGenera
 
         <Input
           label="Intitulé des Travaux *"
-          {...register('intituleTravaux')}
-          error={errors.intituleTravaux?.message}
+          value={formData.intituleTravaux}
+          onChange={(e) => handleChange('intituleTravaux', e.target.value)}
           placeholder="Ex: Maintenance équipements télécoms"
+          required
+          minLength={5}
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
             label="Localisation *"
-            {...register('localisation')}
-            error={errors.localisation?.message}
+            value={formData.localisation}
+            onChange={(e) => handleChange('localisation', e.target.value)}
             placeholder="Ex: Antananarivo Centre - Pylône principal"
+            required
           />
           <Input
             label="Code Site *"
-            {...register('codeSite')}
-            error={errors.codeSite?.message}
+            value={formData.codeSite}
+            onChange={(e) => handleChange('codeSite', e.target.value)}
             placeholder="Ex: ANT-001"
+            required
           />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
             label="Contractant *"
-            {...register('contractant')}
-            error={errors.contractant?.message}
+            value={formData.contractant}
+            onChange={(e) => handleChange('contractant', e.target.value)}
             placeholder="Nom de l'entreprise"
+            required
           />
           <Input
             label="Nombre d'Intervenants *"
             type="number"
-            {...register('nombreIntervenants', { valueAsNumber: true })}
-            error={errors.nombreIntervenants?.message}
+            value={formData.nombreIntervenants}
+            onChange={(e) => handleChange('nombreIntervenants', parseInt(e.target.value) || 1)}
             min={1}
+            required
           />
         </div>
 
@@ -165,165 +156,248 @@ export default function PermitGeneralForm({ onComplete, onCancel }: PermitGenera
           <Input
             label="Date de Début *"
             type="date"
-            {...register('dateDebut')}
-            error={errors.dateDebut?.message}
+            value={formData.dateDebut}
+            onChange={(e) => handleChange('dateDebut', e.target.value)}
+            required
           />
           <Input
             label="Date de Fin *"
             type="date"
-            {...register('dateFin')}
-            error={errors.dateFin?.message}
+            value={formData.dateFin}
+            onChange={(e) => handleChange('dateFin', e.target.value)}
+            required
           />
         </div>
       </form>
     );
-  };
+  });
+  Step1Component.displayName = 'Step1Component';
 
   // Étape 2: Types de travaux à risques
-  const Step2Component = () => {
-    const {
-      register,
-      handleSubmit,
-      watch,
-    } = useForm<Step2Data>({
-      resolver: zodResolver(step2Schema),
-      defaultValues: {
-        travauxChaud: false,
-        travauxHauteur: false,
-        travauxElectrique: false,
-        travauxEspaceConfine: false,
-        travauxExcavation: false,
-        travauxAutres: false,
-        autresDescription: '',
-      },
+  const Step2Component = forwardRef<StepValidationHandle>((_props, ref) => {
+    const formRef = useRef<HTMLFormElement>(null);
+    const [formData, setFormData] = useState({
+      travauxChaud: false,
+      travauxHauteur: false,
+      travauxElectrique: false,
+      travauxEspaceConfine: false,
+      travauxExcavation: false,
+      travauxAutres: false,
+      autresDescription: '',
     });
 
-    const travauxAutres = watch('travauxAutres');
+    // Exposer la fonction de validation via ref
+    useImperativeHandle(ref, () => ({
+      validate: async () => {
+        // Pas de validation requise pour cette étape (tous optionnels)
+        return true;
+      },
+    }));
 
-    const onSubmit = (data: Step2Data) => {
-      console.log('Step2 data:', data);
+    const handleCheckboxChange = (field: string, checked: boolean) => {
+      const newData = { ...formData, [field]: checked };
+      setFormData(newData);
+      step2DataRef.current = newData;
     };
 
+    const handleInputChange = (field: string, value: string) => {
+      const newData = { ...formData, [field]: value };
+      setFormData(newData);
+      step2DataRef.current = newData;
+    };
+    
+    // Initialiser les données au montage
+    useEffect(() => {
+      step2DataRef.current = formData;
+    }, [formData]);
+
     return (
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form ref={formRef} className="space-y-4" noValidate>
         <p className="text-sm text-gray-600 mb-4">
-          Cocher tous les types de travaux concernés par cette intervention
+          Cochez les types de travaux concernés par cette intervention (sélection multiple optionnelle)
         </p>
 
         <Checkbox
           label="Travaux à chaud"
           description="Soudure, meulage, découpe thermique, etc."
-          {...register('travauxChaud')}
+          checked={formData.travauxChaud}
+          onChange={(e) => handleCheckboxChange('travauxChaud', e.target.checked)}
         />
         <Checkbox
           label="Travaux en hauteur"
           description="Intervention à plus de 3 mètres de hauteur"
-          {...register('travauxHauteur')}
+          checked={formData.travauxHauteur}
+          onChange={(e) => handleCheckboxChange('travauxHauteur', e.target.checked)}
         />
         <Checkbox
           label="Travaux électriques"
           description="Intervention sur installations électriques"
-          {...register('travauxElectrique')}
+          checked={formData.travauxElectrique}
+          onChange={(e) => handleCheckboxChange('travauxElectrique', e.target.checked)}
         />
         <Checkbox
           label="Travaux en espace confiné"
           description="Intervention dans un espace restreint"
-          {...register('travauxEspaceConfine')}
+          checked={formData.travauxEspaceConfine}
+          onChange={(e) => handleCheckboxChange('travauxEspaceConfine', e.target.checked)}
         />
         <Checkbox
           label="Travaux d'excavation"
           description="Terrassement, forage, creusement"
-          {...register('travauxExcavation')}
+          checked={formData.travauxExcavation}
+          onChange={(e) => handleCheckboxChange('travauxExcavation', e.target.checked)}
         />
         <Checkbox
           label="Autres"
           description="Autres types de travaux à risques"
-          {...register('travauxAutres')}
+          checked={formData.travauxAutres}
+          onChange={(e) => handleCheckboxChange('travauxAutres', e.target.checked)}
         />
 
-        {travauxAutres && (
+        {formData.travauxAutres && (
           <Input
             label="Description des autres travaux"
-            {...register('autresDescription')}
+            value={formData.autresDescription}
+            onChange={(e) => handleInputChange('autresDescription', e.target.value)}
             placeholder="Précisez le type de travaux..."
           />
         )}
       </form>
     );
-  };
+  });
+  Step2Component.displayName = 'Step2Component';
 
   // Étape 3: Engagement du demandeur
-  const Step3Component = () => {
-    const {
-      register,
-      handleSubmit,
-      formState: { errors },
-    } = useForm<Step3Data>({
-      resolver: zodResolver(step3Schema),
-      defaultValues: {
-        evaluationRisquesValidee: false,
-        personneCompetenteAssignee: false,
-        mesuresPreventionMisesEnPlace: false,
-        personnelInforme: false,
-        dangersControles: false,
-      },
+  const Step3Component = forwardRef<StepValidationHandle>((_props, ref) => {
+    const formRef = useRef<HTMLFormElement>(null);
+    const [formData, setFormData] = useState({
+      evaluationRisquesValidee: false,
+      personneCompetenteAssignee: false,
+      mesuresPreventionMisesEnPlace: false,
+      personnelInforme: false,
+      dangersControles: false,
     });
+    const [validationError, setValidationError] = useState<string>('');
 
-    const onSubmit = (data: Step3Data) => {
-      console.log('Step3 data:', data);
+    // Fonction pour valider toutes les checkboxes en une seule fois
+    const validateAllCheckboxes = () => {
+      const allChecked = Object.values(formData).every(value => value === true);
+      
+      if (!allChecked) {
+        setValidationError('Veuillez cocher toutes les cases obligatoires pour continuer');
+        return false;
+      }
+      
+      setValidationError('');
+      return true;
     };
 
+    // Exposer la fonction de validation via ref
+    useImperativeHandle(ref, () => ({
+      validate: async () => {
+        // Valider toutes les checkboxes en une seule fois
+        return validateAllCheckboxes();
+      },
+    }));
+
+    const handleCheckboxChange = (field: string, checked: boolean) => {
+      const newData = { ...formData, [field]: checked };
+      setFormData(newData);
+      step3DataRef.current = newData;
+      // Réinitialiser l'erreur de validation quand une checkbox change
+      if (validationError) {
+        setValidationError('');
+      }
+    };
+    
+    // Initialiser les données au montage
+    useEffect(() => {
+      step3DataRef.current = formData;
+    }, [formData]);
+
     return (
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form ref={formRef} className="space-y-4" noValidate>
         <p className="text-sm text-gray-600 mb-4">
           En tant que demandeur, je m'engage et je confirme que :
         </p>
 
-        <Checkbox
-          label="L'évaluation des risques a été validée *"
-          {...register('evaluationRisquesValidee')}
-        />
-        {errors.evaluationRisquesValidee && (
-          <p className="text-sm text-red-600">{errors.evaluationRisquesValidee.message}</p>
-        )}
+        <div>
+          <Checkbox
+            label="L'évaluation des risques a été validée *"
+            checked={formData.evaluationRisquesValidee}
+            onChange={(e) => handleCheckboxChange('evaluationRisquesValidee', e.target.checked)}
+          />
+        </div>
 
-        <Checkbox
-          label="Une personne compétente a été assignée pour contrôler les mesures *"
-          {...register('personneCompetenteAssignee')}
-        />
-        {errors.personneCompetenteAssignee && (
-          <p className="text-sm text-red-600">{errors.personneCompetenteAssignee.message}</p>
-        )}
+        <div>
+          <Checkbox
+            label="Une personne compétente a été assignée pour contrôler les mesures *"
+            checked={formData.personneCompetenteAssignee}
+            onChange={(e) => handleCheckboxChange('personneCompetenteAssignee', e.target.checked)}
+          />
+        </div>
 
-        <Checkbox
-          label="Les mesures de prévention sont mises en place *"
-          {...register('mesuresPreventionMisesEnPlace')}
-        />
-        {errors.mesuresPreventionMisesEnPlace && (
-          <p className="text-sm text-red-600">{errors.mesuresPreventionMisesEnPlace.message}</p>
-        )}
+        <div>
+          <Checkbox
+            label="Les mesures de prévention sont mises en place *"
+            checked={formData.mesuresPreventionMisesEnPlace}
+            onChange={(e) => handleCheckboxChange('mesuresPreventionMisesEnPlace', e.target.checked)}
+          />
+        </div>
 
-        <Checkbox
-          label="Le personnel a été informé des exigences de sécurité *"
-          {...register('personnelInforme')}
-        />
-        {errors.personnelInforme && (
-          <p className="text-sm text-red-600">{errors.personnelInforme.message}</p>
-        )}
+        <div>
+          <Checkbox
+            label="Le personnel a été informé des exigences de sécurité *"
+            checked={formData.personnelInforme}
+            onChange={(e) => handleCheckboxChange('personnelInforme', e.target.checked)}
+          />
+        </div>
 
-        <Checkbox
-          label="Les dangers seront contrôlés tout au long des travaux *"
-          {...register('dangersControles')}
-        />
-        {errors.dangersControles && (
-          <p className="text-sm text-red-600">{errors.dangersControles.message}</p>
+        <div>
+          <Checkbox
+            label="Les dangers seront contrôlés tout au long des travaux *"
+            checked={formData.dangersControles}
+            onChange={(e) => handleCheckboxChange('dangersControles', e.target.checked)}
+          />
+        </div>
+
+        {validationError && (
+          <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-600">{validationError}</p>
+          </div>
         )}
       </form>
     );
-  };
+  });
+  Step3Component.displayName = 'Step3Component';
 
   // Étape 4: Révision et soumission
   const Step4Component = () => {
+    // Récupérer les données réelles des étapes précédentes
+    const step1Data = step1DataRef.current || {};
+    const step2Data = step2DataRef.current || {};
+    
+    // Récupérer les informations du plan de prévention sélectionné
+    const selectedPlan = plansPrevention.find((p) => p.id === step1Data.planPreventionId);
+    const planReference = selectedPlan?.reference || 'Non sélectionné';
+    const planSite = selectedPlan?.nomSite || '';
+    
+    // Liste des types de travaux sélectionnés
+    const travauxTypes = [];
+    if (step2Data.travauxChaud) travauxTypes.push('Travaux à chaud');
+    if (step2Data.travauxHauteur) travauxTypes.push('Travaux en hauteur');
+    if (step2Data.travauxElectrique) travauxTypes.push('Travaux électriques');
+    if (step2Data.travauxEspaceConfine) travauxTypes.push('Travaux en espace confiné');
+    if (step2Data.travauxExcavation) travauxTypes.push('Travaux d\'excavation');
+    if (step2Data.travauxAutres) travauxTypes.push('Autres');
+    
+    // Formatage des dates
+    const formatDate = (dateString: string) => {
+      if (!dateString) return 'Non définie';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    };
+
     return (
       <div className="space-y-6">
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -345,34 +419,61 @@ export default function PermitGeneralForm({ onComplete, onCancel }: PermitGenera
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
-              <p className="font-medium text-gray-700">Travaux:</p>
-              <p className="text-gray-600">Maintenance équipements télécoms</p>
+              <p className="font-medium text-gray-700">Plan de Prévention:</p>
+              <p className="text-gray-600">{planReference} {planSite ? `- ${planSite}` : ''}</p>
             </div>
             <div>
-              <p className="font-medium text-gray-700">Site:</p>
-              <p className="text-gray-600">ANT-001 - Antananarivo Centre</p>
+              <p className="font-medium text-gray-700">Intitulé des Travaux:</p>
+              <p className="text-gray-600">{step1Data.intituleTravaux || 'Non renseigné'}</p>
+            </div>
+            <div>
+              <p className="font-medium text-gray-700">Localisation:</p>
+              <p className="text-gray-600">{step1Data.localisation || 'Non renseigné'}</p>
+            </div>
+            <div>
+              <p className="font-medium text-gray-700">Code Site:</p>
+              <p className="text-gray-600">{step1Data.codeSite || 'Non renseigné'}</p>
             </div>
             <div>
               <p className="font-medium text-gray-700">Contractant:</p>
-              <p className="text-gray-600">TOA Madagascar</p>
+              <p className="text-gray-600">{step1Data.contractant || 'Non renseigné'}</p>
             </div>
             <div>
-              <p className="font-medium text-gray-700">Intervenants:</p>
-              <p className="text-gray-600">2 personne(s)</p>
+              <p className="font-medium text-gray-700">Nombre d'Intervenants:</p>
+              <p className="text-gray-600">{step1Data.nombreIntervenants || 0} personne(s)</p>
             </div>
             <div>
-              <p className="font-medium text-gray-700">Période:</p>
-              <p className="text-gray-600">2025-01-20 au 2025-01-22</p>
+              <p className="font-medium text-gray-700">Date de Début:</p>
+              <p className="text-gray-600">{formatDate(step1Data.dateDebut)}</p>
+            </div>
+            <div>
+              <p className="font-medium text-gray-700">Date de Fin:</p>
+              <p className="text-gray-600">{formatDate(step1Data.dateFin)}</p>
             </div>
           </div>
 
-          <div>
-            <p className="font-medium text-gray-700 mb-2">Types de travaux à risques:</p>
-            <div className="flex flex-wrap gap-2">
-              <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded">Travaux en hauteur</span>
-              <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded">Travaux électriques</span>
+          {travauxTypes.length > 0 && (
+            <div>
+              <p className="font-medium text-gray-700 mb-2">Types de travaux à risques:</p>
+              <div className="flex flex-wrap gap-2">
+                {travauxTypes.map((type, index) => (
+                  <span
+                    key={index}
+                    className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded"
+                  >
+                    {type}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
+
+          {step2Data.travauxAutres && step2Data.autresDescription && (
+            <div>
+              <p className="font-medium text-gray-700 mb-2">Description des autres travaux:</p>
+              <p className="text-gray-600 text-sm">{step2Data.autresDescription}</p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -383,20 +484,38 @@ export default function PermitGeneralForm({ onComplete, onCancel }: PermitGenera
       id: 'details',
       title: 'Détails de l\'intervention',
       description: 'Informations générales sur les travaux à effectuer',
-      component: <Step1Component />,
+      component: <Step1Component ref={step1ValidationRef} />,
       isValid: plansDisponibles.length > 0,
+      validateStep: async () => {
+        if (step1ValidationRef.current) {
+          return await step1ValidationRef.current.validate();
+        }
+        return true;
+      },
     },
     {
       id: 'risques',
       title: 'Types de travaux à risques',
       description: 'Sélection des types de travaux concernés',
-      component: <Step2Component />,
+      component: <Step2Component ref={step2ValidationRef} />,
+      validateStep: async () => {
+        if (step2ValidationRef.current) {
+          return await step2ValidationRef.current.validate();
+        }
+        return true;
+      },
     },
     {
       id: 'engagement',
       title: 'Engagement du demandeur',
       description: 'Confirmations obligatoires du demandeur',
-      component: <Step3Component />,
+      component: <Step3Component ref={step3ValidationRef} />,
+      validateStep: async () => {
+        if (step3ValidationRef.current) {
+          return await step3ValidationRef.current.validate();
+        }
+        return true;
+      },
     },
     {
       id: 'revision',
@@ -407,36 +526,41 @@ export default function PermitGeneralForm({ onComplete, onCancel }: PermitGenera
   ];
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleComplete = (data: any) => {
+  const handleComplete = (_data: any) => {
+    // Récupérer les données de toutes les étapes
+    const step1Data = step1DataRef.current || {};
+    const step2Data = step2DataRef.current || {};
+    const step3Data = step3DataRef.current || {};
+    
     // Préparer les données pour le store
     const permisData = {
-      planPreventionId: data.planPreventionId,
+      planPreventionId: step1Data.planPreventionId,
       planPreventionReference:
-        plansPrevention.find((p) => p.id === data.planPreventionId)?.reference || '',
-      intituleTravaux: data.intituleTravaux,
-      localisation: data.localisation,
-      codeSite: data.codeSite,
-      contractant: data.contractant,
-      nombreIntervenants: data.nombreIntervenants,
-      dateDebut: new Date(data.dateDebut),
-      dateFin: new Date(data.dateFin),
+        plansPrevention.find((p) => p.id === step1Data.planPreventionId)?.reference || '',
+      intituleTravaux: step1Data.intituleTravaux,
+      localisation: step1Data.localisation,
+      codeSite: step1Data.codeSite,
+      contractant: step1Data.contractant,
+      nombreIntervenants: step1Data.nombreIntervenants,
+      dateDebut: new Date(step1Data.dateDebut),
+      dateFin: new Date(step1Data.dateFin),
       dureeMaxJours: 30,
       travauxRisques: {
-        travauxChaud: data.travauxChaud,
-        travauxHauteur: data.travauxHauteur,
-        travauxElectrique: data.travauxElectrique,
-        travauxEspaceConfine: data.travauxEspaceConfine,
-        travauxExcavation: data.travauxExcavation,
-        autres: data.travauxAutres,
-        autresDescription: data.autresDescription,
+        travauxChaud: step2Data.travauxChaud || false,
+        travauxHauteur: step2Data.travauxHauteur || false,
+        travauxElectrique: step2Data.travauxElectrique || false,
+        travauxEspaceConfine: step2Data.travauxEspaceConfine || false,
+        travauxExcavation: step2Data.travauxExcavation || false,
+        autres: step2Data.travauxAutres || false,
+        autresDescription: step2Data.autresDescription || '',
       },
       permisAnnexes: [],
       status: 'en_attente_validation_chef' as const,
-      evaluationRisquesValidee: data.evaluationRisquesValidee,
-      personneCompetenteAssignee: data.personneCompetenteAssignee,
-      mesuresPreventionMisesEnPlace: data.mesuresPreventionMisesEnPlace,
-      personnelInforme: data.personnelInforme,
-      dangersControles: data.dangersControles,
+      evaluationRisquesValidee: step3Data.evaluationRisquesValidee || false,
+      personneCompetenteAssignee: step3Data.personneCompetenteAssignee || false,
+      mesuresPreventionMisesEnPlace: step3Data.mesuresPreventionMisesEnPlace || false,
+      personnelInforme: step3Data.personnelInforme || false,
+      dangersControles: step3Data.dangersControles || false,
       demandeurNom: user?.prenom && user?.nom ? `${user.prenom} ${user.nom}` : '',
       demandeurDate: new Date(),
       superviseurNom: user?.prenom && user?.nom ? `${user.prenom} ${user.nom}` : '',

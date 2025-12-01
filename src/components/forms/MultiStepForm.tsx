@@ -10,6 +10,9 @@ interface Step {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   component: ReactNode | ((formData: any, updateFormData: (data: any) => void) => ReactNode);
   isValid?: boolean;
+  // Fonction de validation qui retourne une Promise<boolean>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  validateStep?: () => Promise<boolean> | boolean;
 }
 
 interface MultiStepFormProps {
@@ -43,7 +46,16 @@ export default function MultiStepForm({
   const isLastStep = currentStep === steps.length - 1;
   const isFirstStep = currentStep === 0;
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    // Valider l'étape actuelle avant de passer à la suivante
+    if (currentStepData?.validateStep) {
+      const isValid = await currentStepData.validateStep();
+      if (!isValid) {
+        // La validation a échoué, on reste sur l'étape actuelle
+        return;
+      }
+    }
+
     if (!isLastStep) {
       setCurrentStep(currentStep + 1);
     } else {
@@ -76,18 +88,17 @@ export default function MultiStepForm({
         <div className="flex items-start w-full">
           {steps.map((step, index) => (
             <React.Fragment key={step.id}>
-              <div 
+              <div
                 className="flex flex-col items-center relative z-10 flex-1 min-w-0 px-1 cursor-pointer"
                 onClick={() => setCurrentStep(index)}
               >
                 <div
-                  className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-colors duration-200 hover:scale-105 ${
-                    index < currentStep
-                    ? 'bg-green-500 text-white hover:bg-green-600'
+                  className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-colors duration-200 hover:scale-105 ${index < currentStep
+                      ? 'bg-green-500 text-white hover:bg-green-600'
                       : index === currentStep
-                      ? 'bg-primary-500 text-white hover:bg-primary-600'
-                      : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                  }`}
+                        ? 'bg-primary-500 text-white hover:bg-primary-600'
+                        : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                    }`}
                 >
                   {index < currentStep ? (
                     <Check className="h-4 w-4" />
@@ -95,18 +106,16 @@ export default function MultiStepForm({
                     index + 1
                   )}
                 </div>
-                <p className={`mt-2 text-xs font-medium text-center whitespace-normal w-full px-1 leading-tight ${
-                  index <= currentStep ? 'text-gray-900 font-medium' : 'text-gray-400'
-                }`}>
+                <p className={`mt-2 text-xs font-medium text-center whitespace-normal w-full px-1 leading-tight ${index <= currentStep ? 'text-gray-900 font-medium' : 'text-gray-400'
+                  }`}>
                   {step.title}
                 </p>
               </div>
-              
+
               {index < steps.length - 1 && (
-                <div 
-                  className={`h-0.5 flex-1 mt-4 ${
-                    index < currentStep ? 'bg-green-500' : 'bg-gray-200'
-                  }`}
+                <div
+                  className={`h-0.5 flex-1 mt-4 ${index < currentStep ? 'bg-green-500' : 'bg-gray-200'
+                    }`}
                 />
               )}
             </React.Fragment>
@@ -133,7 +142,7 @@ export default function MultiStepForm({
         <CardContent className="px-4 sm:px-6 pb-6 pt-0">
           <div className="space-y-4 sm:space-y-6">
             {typeof currentStepData.component === 'function'
-              ? currentStepData.component(formData, updateFormData || (() => {}))
+              ? currentStepData.component(formData, updateFormData || (() => { }))
               : currentStepData.component}
           </div>
         </CardContent>
@@ -151,7 +160,7 @@ export default function MultiStepForm({
           <ChevronLeft className="h-4 w-4 mr-1" />
           <span>Précédent</span>
         </Button>
-        
+
         <Button
           onClick={handleNext}
           disabled={!canProceed || loading}

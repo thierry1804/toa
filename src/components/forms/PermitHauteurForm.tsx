@@ -177,6 +177,7 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
           error={errors.planPreventionId?.message}
           options={plansDisponibles}
           placeholder="Sélectionnez un plan de prévention"
+          required
         />
 
         <Input
@@ -184,6 +185,7 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
           {...register('prestataire')}
           error={errors.prestataire?.message}
           placeholder="Nom de l'entreprise prestataire"
+          required
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -192,12 +194,14 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
             type="date"
             {...register('dateDebut')}
             error={errors.dateDebut?.message}
+            required
           />
           <Input
             label="Date de fin *"
             type="date"
             {...register('dateFin')}
             error={errors.dateFin?.message}
+            required
           />
         </div>
 
@@ -207,6 +211,7 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
           error={errors.descriptionOperation?.message}
           placeholder="Décrivez en détail l'opération à effectuer en hauteur..."
           rows={3}
+          required
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -215,12 +220,14 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
             {...register('codeSite')}
             error={errors.codeSite?.message}
             placeholder="Ex: ANT-001"
+            required
           />
           <Input
             label="Région *"
             {...register('region')}
             error={errors.region?.message}
             placeholder="Ex: Analamanga"
+            required
           />
         </div>
 
@@ -230,6 +237,7 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
           {...register('nombreIntervenants', { valueAsNumber: true })}
           error={errors.nombreIntervenants?.message}
           min={1}
+          required
         />
 
         <div>
@@ -812,6 +820,7 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
               label={`Plan de sauvetage disponible${hauteurSuperieure20m ? ' *' : ''}`}
               description={hauteurSuperieure20m ? "Obligatoire pour les travaux en hauteur > 20m" : "Plan de sauvetage en cas d'urgence"}
               {...register('planSauvetageDisponible')}
+              required={hauteurSuperieure20m}
             />
             {hauteurSuperieure20m && !planSauvetage && (
               <div className="mt-2 p-3 bg-orange-50 border border-orange-200 rounded-md">
@@ -844,7 +853,7 @@ export default function PermitHauteurForm({ onComplete, onCancel, initialData }:
 
         <div className="space-y-4">
           <h4 className="font-medium text-gray-900">Récapitulatif de votre demande</h4>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
               <p className="font-medium text-gray-700">Plan de prévention:</p>

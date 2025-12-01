@@ -13,44 +13,61 @@ import { formatDate } from '@/lib/utils';
 import type { PermitStatus } from '@/types';
 
 export default function PermitsListPage() {
-  const { permisGeneraux } = usePermitStore();
+  const { permisGeneraux, permisHauteur, permisElectrique } = usePermitStore();
   const { user, canAccessFeature } = useAuthStore();
   const { t } = useI18n();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
   const [validationModal, setValidationModal] = useState<{
     isOpen: boolean;
     permisId: string;
     status: string;
     type: 'chef' | 'hse';
+    permitType: 'general' | 'hauteur' | 'electrique';
   }>({
     isOpen: false,
     permisId: '',
     status: '',
     type: 'chef',
+    permitType: 'general',
   });
 
+  // Combiner tous les types de permis avec leur type
+  const allPermits = [
+    ...permisGeneraux.map((p) => ({ ...p, permitType: 'general' as const })),
+    ...permisHauteur.map((p) => ({ ...p, permitType: 'hauteur' as const })),
+    ...permisElectrique.map((p) => ({ ...p, permitType: 'electrique' as const })),
+  ];
+
   // Filtrer les permis selon le rôle
-  const filteredPermis = permisGeneraux.filter((permis) => {
+  const filteredPermis = allPermits.filter((permis) => {
     // Filtre par recherche
     const matchSearch =
       searchQuery === '' ||
-      permis.numero.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      permis.reference.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      permis.codeSite.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      permis.contractant.toLowerCase().includes(searchQuery.toLowerCase());
+      permis.numero?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      permis.reference?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      permis.codeSite?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (permis as any).contractant?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (permis as any).prestataire?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (permis as any).intituleTravaux?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (permis as any).descriptionTravail?.toLowerCase().includes(searchQuery.toLowerCase());
 
     // Filtre par statut
     const matchStatus = statusFilter === 'all' || permis.status === statusFilter;
+
+    // Filtre par type
+    const matchType = typeFilter === 'all' || permis.permitType === typeFilter;
 
     // Filtre par rôle prestataire (voir seulement ses propres permis)
     const matchRole =
       user?.role !== 'prestataire' ||
       permis.creerPar === user?.email ||
-      permis.contractant === user?.entreprise;
+      (permis as any).contractant === user?.entreprise ||
+      (permis as any).prestataire === user?.entreprise;
 
-    return matchSearch && matchStatus && matchRole;
+    return matchSearch && matchStatus && matchType && matchRole;
   });
 
   const getStatusBadge = (status: PermitStatus) => {
@@ -96,6 +113,14 @@ export default function PermitsListPage() {
     { value: 'cloture', label: t('permits.statuses.cloture') },
   ];
 
+  const typeOptions = [
+    { value: 'all', label: 'Tous les types' },
+    { value: 'general', label: 'Permis Général' },
+    { value: 'hauteur', label: 'Permis Hauteur' },
+    { value: 'electrique', label: 'Permis Électrique' },
+  ];
+
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -118,7 +143,7 @@ export default function PermitsListPage() {
       {/* Filtres */}
       <Card>
         <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="md:col-span-2">
               <Input
                 placeholder="Rechercher par numéro, référence, site..."
@@ -127,6 +152,12 @@ export default function PermitsListPage() {
                 className="w-full"
               />
             </div>
+            <Select
+              options={typeOptions}
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              placeholder="Type de permis"
+            />
             <Select
               options={statusOptions}
               value={statusFilter}
@@ -202,10 +233,12 @@ export default function PermitsListPage() {
                         {permis.reference || '-'}
                       </td>
                       <td className="px-4 py-4 text-sm text-gray-900">
-                        {permis.intituleTravaux}
+                        {(permis as any).intituleTravaux || (permis as any).descriptionTravail || '-'}
                       </td>
                       <td className="px-4 py-4 text-sm text-gray-600">{permis.codeSite}</td>
-                      <td className="px-4 py-4 text-sm text-gray-600">{permis.contractant}</td>
+                      <td className="px-4 py-4 text-sm text-gray-600">
+                        {(permis as any).contractant || (permis as any).prestataire || '-'}
+                      </td>
                       <td className="px-4 py-4 text-sm text-gray-600">
                         {formatDate(permis.dateDebut)}
                       </td>
@@ -239,6 +272,7 @@ export default function PermitsListPage() {
                                     permisId: permis.id,
                                     status: permis.status,
                                     type: 'chef',
+                                    permitType: permis.permitType,
                                   })
                                 }
                                 className="p-1.5 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
@@ -256,6 +290,7 @@ export default function PermitsListPage() {
                                     permisId: permis.id,
                                     status: permis.status,
                                     type: 'hse',
+                                    permitType: permis.permitType,
                                   })
                                 }
                                 className="p-1.5 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
@@ -336,15 +371,24 @@ export default function PermitsListPage() {
       </div>
 
       {/* Modale de validation */}
-      <ValidationModal
-        isOpen={validationModal.isOpen}
-        onClose={() =>
-          setValidationModal({ isOpen: false, permisId: '', status: '', type: 'chef' })
-        }
-        permisId={validationModal.permisId}
-        currentStatus={validationModal.status}
-        type={validationModal.type}
-      />
+      {validationModal.isOpen && (
+        <ValidationModal
+          isOpen={validationModal.isOpen}
+          onClose={() =>
+            setValidationModal({ 
+              isOpen: false, 
+              permisId: '', 
+              status: '', 
+              type: 'chef',
+              permitType: 'general',
+            })
+          }
+          permisId={validationModal.permisId}
+          currentStatus={validationModal.status}
+          type={validationModal.type}
+          {...{ permitType: validationModal.permitType }}
+        />
+      )}
     </div>
   );
 }

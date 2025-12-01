@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { usePermitStore } from '@/store/permitStore';
 import { useToastStore } from '@/store/toastStore';
@@ -7,19 +7,22 @@ import Button from '@/components/ui/Button';
 import Textarea from '@/components/ui/Textarea';
 import { CheckCircle, XCircle } from 'lucide-react';
 
-interface ValidationModalProps {
+export interface ValidationModalProps {
   isOpen: boolean;
   onClose: () => void;
   permisId: string;
   currentStatus: string;
   type: 'chef' | 'hse';
+  permitType: 'general' | 'hauteur' | 'electrique';
 }
 
 export default function ValidationModal({
   isOpen,
   onClose,
   permisId,
+  currentStatus: _currentStatus,
   type,
+  permitType,
 }: ValidationModalProps) {
   const { user } = useAuthStore();
   const { validerParChefProjet, validerParHSE, refuserPermis } = usePermitStore();
@@ -27,6 +30,14 @@ export default function ValidationModal({
   const [commentaire, setCommentaire] = useState('');
   const [action, setAction] = useState<'valider' | 'refuser' | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Réinitialiser l'état quand la modale se ferme
+  useEffect(() => {
+    if (!isOpen) {
+      setCommentaire('');
+      setAction(null);
+    }
+  }, [isOpen]);
 
   const handleSubmit = async () => {
     if (!action || !user) return;
@@ -38,19 +49,25 @@ export default function ValidationModal({
 
       if (action === 'valider') {
         if (type === 'chef') {
-          validerParChefProjet(permisId, nom, commentaire);
+          validerParChefProjet(permisId, nom, commentaire, permitType);
           success('Permis validé par le Chef de Projet avec succès');
         } else {
-          validerParHSE(permisId, nom, commentaire);
+          validerParHSE(permisId, nom, commentaire, permitType);
           success('Permis validé par HSE et référence attribuée avec succès');
         }
       } else {
-        refuserPermis(permisId, commentaire);
+        refuserPermis(permisId, commentaire, permitType);
         error('Permis refusé');
       }
 
       onClose();
-      window.location.reload(); // Refresh pour voir les changements
+      // Réinitialiser l'état de la modale
+      setCommentaire('');
+      setAction(null);
+      // Rafraîchir la page pour voir les changements
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
     } catch (err) {
       console.error('Erreur lors de la validation:', err);
       error('Une erreur est survenue lors de la validation');

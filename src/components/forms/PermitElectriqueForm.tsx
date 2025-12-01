@@ -244,23 +244,8 @@ export default function PermitElectriqueForm({ onComplete, onCancel }: PermitEle
       brulure: false,
     });
     
-    // Récupérer travailSousTension depuis step1DataRef avec état local
-    const [travailSousTension, setTravailSousTension] = useState(false);
-    
-    useEffect(() => {
-      // Mettre à jour travailSousTension quand step1DataRef change
-      const updateTravailSousTension = () => {
-        try {
-          const value = step1DataRef?.current?.travailSousTension || false;
-          setTravailSousTension(value);
-        } catch (error) {
-          // Si step1DataRef n'est pas encore défini, on garde false
-          setTravailSousTension(false);
-        }
-      };
-      
-      updateTravailSousTension();
-    }, []);
+    // Récupérer travailSousTension depuis step1DataRef
+    const travailSousTension = step1DataRef.current?.travailSousTension || false;
 
     // Exposer la fonction de validation via ref
     useImperativeHandle(ref, () => ({
@@ -591,23 +576,8 @@ export default function PermitElectriqueForm({ onComplete, onCancel }: PermitEle
       visaConsignation: '',
     });
     
-    // Récupérer consignationEnergie depuis step1DataRef avec état local
-    const [consignationEnergie, setConsignationEnergie] = useState(false);
-    
-    useEffect(() => {
-      // Mettre à jour consignationEnergie quand step1DataRef change
-      const updateConsignationEnergie = () => {
-        try {
-          const value = step1DataRef?.current?.consignationEnergie || false;
-          setConsignationEnergie(value);
-        } catch (error) {
-          // Si step1DataRef n'est pas encore défini, on garde false
-          setConsignationEnergie(false);
-        }
-      };
-      
-      updateConsignationEnergie();
-    }, []);
+    // Récupérer consignationEnergie depuis step1DataRef
+    const consignationEnergie = step1DataRef.current?.consignationEnergie || false;
 
     // Exposer la fonction de validation via ref
     useImperativeHandle(ref, () => ({

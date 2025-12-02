@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { User, UserRole } from '@/types';
 
 interface UserStore {
@@ -20,62 +21,6 @@ interface UserStore {
   getActiveUsers: () => User[];
   getPrestataires: () => User[];
 }
-
-export const useUserStore = create<UserStore>((set, get) => ({
-  users: [],
-  selectedUser: null,
-
-  setUsers: (users) => set({ users }),
-
-  addUser: (user) =>
-    set((state) => ({
-      users: [...state.users, user],
-    })),
-
-  updateUser: (id, updatedUser) =>
-    set((state) => ({
-      users: state.users.map((user) =>
-        user.id === id ? { ...user, ...updatedUser, updatedAt: new Date() } : user
-      ),
-    })),
-
-  deleteUser: (id) =>
-    set((state) => ({
-      users: state.users.filter((user) => user.id !== id),
-    })),
-
-  toggleUserStatus: (id) =>
-    set((state) => ({
-      users: state.users.map((user) =>
-        user.id === id
-          ? { ...user, actif: !user.actif, updatedAt: new Date() }
-          : user
-      ),
-    })),
-
-  setSelectedUser: (user) => set({ selectedUser: user }),
-
-  // Helpers
-  getUserById: (id) => {
-    return get().users.find((user) => user.id === id);
-  },
-
-  getUsersByRole: (role) => {
-    return get().users.filter((user) => user.role === role);
-  },
-
-  getUsersByEntreprise: (entreprise) => {
-    return get().users.filter((user) => user.entreprise === entreprise);
-  },
-
-  getActiveUsers: () => {
-    return get().users.filter((user) => user.actif);
-  },
-
-  getPrestataires: () => {
-    return get().users.filter((user) => user.role === 'prestataire');
-  },
-}));
 
 // Mock data pour le développement - Les 11 prestataires + équipe TOA
 const mockUsers: User[] = [
@@ -297,7 +242,65 @@ const mockUsers: User[] = [
   },
 ];
 
-// Initialiser le store avec les données mock
-if (typeof window !== 'undefined') {
-  useUserStore.setState({ users: mockUsers });
-}
+export const useUserStore = create<UserStore>()(
+  persist(
+    (set, get) => ({
+      users: mockUsers,
+      selectedUser: null,
+
+      setUsers: (users) => set({ users }),
+
+      addUser: (user) =>
+        set((state) => ({
+          users: [...state.users, user],
+        })),
+
+      updateUser: (id, updatedUser) =>
+        set((state) => ({
+          users: state.users.map((user) =>
+            user.id === id ? { ...user, ...updatedUser, updatedAt: new Date() } : user
+          ),
+        })),
+
+      deleteUser: (id) =>
+        set((state) => ({
+          users: state.users.filter((user) => user.id !== id),
+        })),
+
+      toggleUserStatus: (id) =>
+        set((state) => ({
+          users: state.users.map((user) =>
+            user.id === id
+              ? { ...user, actif: !user.actif, updatedAt: new Date() }
+              : user
+          ),
+        })),
+
+      setSelectedUser: (user) => set({ selectedUser: user }),
+
+      // Helpers
+      getUserById: (id) => {
+        return get().users.find((user) => user.id === id);
+      },
+
+      getUsersByRole: (role) => {
+        return get().users.filter((user) => user.role === role);
+      },
+
+      getUsersByEntreprise: (entreprise) => {
+        return get().users.filter((user) => user.entreprise === entreprise);
+      },
+
+      getActiveUsers: () => {
+        return get().users.filter((user) => user.actif);
+      },
+
+      getPrestataires: () => {
+        return get().users.filter((user) => user.role === 'prestataire');
+      },
+    }),
+    {
+      name: 'user-store',
+    }
+  )
+);

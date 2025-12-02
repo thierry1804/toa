@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { PlanPrevention } from '../types/prevention';
 
 interface PreventionStore {
@@ -330,13 +331,15 @@ const demoPlans: PlanPrevention[] = [
   },
 ];
 
-export const usePreventionStore = create<PreventionStore>((set, get) => ({
-  plansPrevention: demoPlans,
+export const usePreventionStore = create<PreventionStore>()(
+  persist(
+    (set, get) => ({
+      plansPrevention: demoPlans,
 
-  addPlanPrevention: (plan) =>
-    set((state) => ({
-      plansPrevention: [...state.plansPrevention, plan],
-    })),
+      addPlanPrevention: (plan) =>
+        set((state) => ({
+          plansPrevention: [...state.plansPrevention, plan],
+        })),
 
   updatePlanPrevention: (id, updatedPlan) =>
     set((state) => ({
@@ -420,23 +423,28 @@ export const usePreventionStore = create<PreventionStore>((set, get) => ({
       ),
     })),
 
-  refuserParHSE: (planId, userId, motif) =>
-    set((state) => ({
-      plansPrevention: state.plansPrevention.map((plan) =>
-        plan.id === planId
-          ? {
-              ...plan,
-              status: 'refuse_hse',
-              refusHSE: {
-                refusePar: userId,
-                dateRefus: new Date(),
-                motif,
-              },
-              updatedAt: new Date(),
-            }
-          : plan
-      ),
-    })),
-}));
+      refuserParHSE: (planId, userId, motif) =>
+        set((state) => ({
+          plansPrevention: state.plansPrevention.map((plan) =>
+            plan.id === planId
+              ? {
+                  ...plan,
+                  status: 'refuse_hse',
+                  refusHSE: {
+                    refusePar: userId,
+                    dateRefus: new Date(),
+                    motif,
+                  },
+                  updatedAt: new Date(),
+                }
+              : plan
+          ),
+        })),
+    }),
+    {
+      name: 'prevention-store',
+    }
+  )
+);
 
 

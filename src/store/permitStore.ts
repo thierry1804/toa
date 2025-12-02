@@ -39,10 +39,10 @@ interface PermitStore {
   getPermisElectriqueById: (id: string) => PermisElectrique | undefined;
 
   // Actions de workflow
-  validerParChefProjet: (permisId: string, nom: string, commentaire?: string) => void;
-  validerParHSE: (permisId: string, nom: string, commentaire?: string) => void;
-  refuserPermis: (permisId: string, raison: string) => void;
-  cloturerPermis: (permisId: string, nom: string, commentaire?: string) => void;
+  validerParChefProjet: (permisId: string, nom: string, commentaire?: string, permitType?: 'general' | 'hauteur' | 'electrique') => void;
+  validerParHSE: (permisId: string, nom: string, commentaire?: string, permitType?: 'general' | 'hauteur' | 'electrique') => void;
+  refuserPermis: (permisId: string, raison: string, permitType?: 'general' | 'hauteur' | 'electrique') => void;
+  cloturerPermis: (permisId: string, nom: string, commentaire?: string, permitType?: 'general' | 'hauteur' | 'electrique') => void;
 
   // Actions pour les validations journalières
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -295,58 +295,164 @@ export const usePermitStore = create<PermitStore>()(
       },
 
       // Workflow
-      validerParChefProjet: (permisId, nom, commentaire) => {
-        set((state) => ({
-          permisGeneraux: state.permisGeneraux.map((p) =>
-            p.id === permisId
-              ? {
-                  ...p,
-                  status: 'en_attente_validation_hse' as PermitStatus,
-                  chefProjetNom: nom,
-                  chefProjetDate: new Date(),
-                  chefProjetCommentaire: commentaire,
-                  updatedAt: new Date(),
-                }
-              : p
-          ),
-        }));
+      validerParChefProjet: (permisId, nom, commentaire, permitType = 'general') => {
+        set((state) => {
+          if (permitType === 'hauteur') {
+            return {
+              permisHauteur: state.permisHauteur.map((p) =>
+                p.id === permisId
+                  ? {
+                      ...p,
+                      status: 'en_attente_validation_hse' as PermitStatus,
+                      chefProjetNom: nom,
+                      chefProjetDate: new Date(),
+                      chefProjetCommentaire: commentaire,
+                      updatedAt: new Date(),
+                    }
+                  : p
+              ),
+            };
+          } else if (permitType === 'electrique') {
+            return {
+              permisElectrique: state.permisElectrique.map((p) =>
+                p.id === permisId
+                  ? {
+                      ...p,
+                      status: 'en_attente_validation_hse' as PermitStatus,
+                      chefProjetNom: nom,
+                      chefProjetDate: new Date(),
+                      chefProjetCommentaire: commentaire,
+                      updatedAt: new Date(),
+                    }
+                  : p
+              ),
+            };
+          } else {
+            return {
+              permisGeneraux: state.permisGeneraux.map((p) =>
+                p.id === permisId
+                  ? {
+                      ...p,
+                      status: 'en_attente_validation_hse' as PermitStatus,
+                      chefProjetNom: nom,
+                      chefProjetDate: new Date(),
+                      chefProjetCommentaire: commentaire,
+                      updatedAt: new Date(),
+                    }
+                  : p
+              ),
+            };
+          }
+        });
       },
 
-      validerParHSE: (permisId, nom, commentaire) => {
+      validerParHSE: (permisId, nom, commentaire, permitType = 'general') => {
         const year = new Date().getFullYear();
-        const count = get().permisGeneraux.filter((p) => p.reference).length + 1;
+        // Compter tous les permis validés pour générer une référence unique
+        const allValidated = [
+          ...get().permisGeneraux.filter((p) => p.reference),
+          ...get().permisHauteur.filter((p) => p.reference),
+          ...get().permisElectrique.filter((p) => p.reference),
+        ];
+        const count = allValidated.length + 1;
         const reference = `${year}/PTW/${count.toString().padStart(3, '0')}`;
 
-        set((state) => ({
-          permisGeneraux: state.permisGeneraux.map((p) =>
-            p.id === permisId
-              ? {
-                  ...p,
-                  status: 'valide' as PermitStatus,
-                  reference,
-                  hseNom: nom,
-                  hseDate: new Date(),
-                  hseCommentaire: commentaire,
-                  updatedAt: new Date(),
-                }
-              : p
-          ),
-        }));
+        set((state) => {
+          if (permitType === 'hauteur') {
+            return {
+              permisHauteur: state.permisHauteur.map((p) =>
+                p.id === permisId
+                  ? {
+                      ...p,
+                      status: 'valide' as PermitStatus,
+                      reference,
+                      hseNom: nom,
+                      hseDate: new Date(),
+                      hseCommentaire: commentaire,
+                      updatedAt: new Date(),
+                    }
+                  : p
+              ),
+            };
+          } else if (permitType === 'electrique') {
+            return {
+              permisElectrique: state.permisElectrique.map((p) =>
+                p.id === permisId
+                  ? {
+                      ...p,
+                      status: 'valide' as PermitStatus,
+                      reference,
+                      hseNom: nom,
+                      hseDate: new Date(),
+                      hseCommentaire: commentaire,
+                      updatedAt: new Date(),
+                    }
+                  : p
+              ),
+            };
+          } else {
+            return {
+              permisGeneraux: state.permisGeneraux.map((p) =>
+                p.id === permisId
+                  ? {
+                      ...p,
+                      status: 'valide' as PermitStatus,
+                      reference,
+                      hseNom: nom,
+                      hseDate: new Date(),
+                      hseCommentaire: commentaire,
+                      updatedAt: new Date(),
+                    }
+                  : p
+              ),
+            };
+          }
+        });
       },
 
-      refuserPermis: (permisId, raison) => {
-        set((state) => ({
-          permisGeneraux: state.permisGeneraux.map((p) =>
-            p.id === permisId
-              ? {
-                  ...p,
-                  status: 'refuse' as PermitStatus,
-                  hseCommentaire: raison,
-                  updatedAt: new Date(),
-                }
-              : p
-          ),
-        }));
+      refuserPermis: (permisId, raison, permitType = 'general') => {
+        set((state) => {
+          if (permitType === 'hauteur') {
+            return {
+              permisHauteur: state.permisHauteur.map((p) =>
+                p.id === permisId
+                  ? {
+                      ...p,
+                      status: 'refuse' as PermitStatus,
+                      hseCommentaire: raison,
+                      updatedAt: new Date(),
+                    }
+                  : p
+              ),
+            };
+          } else if (permitType === 'electrique') {
+            return {
+              permisElectrique: state.permisElectrique.map((p) =>
+                p.id === permisId
+                  ? {
+                      ...p,
+                      status: 'refuse' as PermitStatus,
+                      hseCommentaire: raison,
+                      updatedAt: new Date(),
+                    }
+                  : p
+              ),
+            };
+          } else {
+            return {
+              permisGeneraux: state.permisGeneraux.map((p) =>
+                p.id === permisId
+                  ? {
+                      ...p,
+                      status: 'refuse' as PermitStatus,
+                      hseCommentaire: raison,
+                      updatedAt: new Date(),
+                    }
+                  : p
+              ),
+            };
+          }
+        });
       },
 
       cloturerPermis: (permisId, nom, commentaire) => {

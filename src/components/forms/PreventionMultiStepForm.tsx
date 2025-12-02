@@ -519,9 +519,11 @@ export default function PreventionMultiStepForm({ onSubmit, onCancel, initialDat
     }));
   };
 
-  const handleSubmit = (data: PreventionPlan) => {
+  const handleSubmit = (data: any) => {
     console.log('Form submitted:', data);
-    onSubmit(data);
+    // formData contient toutes les données collectées
+    // On passe formData complet à onSubmit
+    onSubmit(formData as PreventionPlan);
   };
 
   const steps = [
@@ -583,23 +585,31 @@ export default function PreventionMultiStepForm({ onSubmit, onCancel, initialDat
             name="entreprisePrestataire"
             label="Nom de l'entreprise"
             required
+            value={formData.entreprisePrestataire || ''}
+            onChange={(e) => updateFormData({ entreprisePrestataire: e.target.value })}
           />
           <Input
             name="siret"
             label="N° SIRET"
             required
             placeholder="14 chiffres"
+            value={formData.siret || ''}
+            onChange={(e) => updateFormData({ siret: e.target.value })}
           />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               name="representantPrestataire"
               label="Représentant"
               required
+              value={formData.representantPrestataire || ''}
+              onChange={(e) => updateFormData({ representantPrestataire: e.target.value })}
             />
             <Input
               name="fonctionPrestataire"
               label="Fonction"
               required
+              value={formData.fonctionPrestataire || ''}
+              onChange={(e) => updateFormData({ fonctionPrestataire: e.target.value })}
             />
           </div>
         </div>
@@ -680,6 +690,8 @@ export default function PreventionMultiStepForm({ onSubmit, onCancel, initialDat
                   </span>
                 }
                 required
+                checked={formData.accordResponsable || false}
+                onChange={(e) => updateFormData({ accordResponsable: e.target.checked })}
               />
             </div>
           </div>

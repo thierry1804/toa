@@ -1,143 +1,22 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { useToastStore } from '@/store/toastStore';
+import { usePreventionStore } from '@/store/preventionStore';
+import { useAuthStore } from '@/store/authStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { ArrowLeft } from 'lucide-react';
 import PreventionMultiStepForm from '@/components/forms/PreventionMultiStepForm';
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
-
-// Define the schema for the form
-const preventionPlanSchema = z.object({
-  // Step 1: Entreprise Prestataire
-  entreprisePrestataire: z.string().min(1, 'Entreprise requise'),
-  siret: z.string().min(14, 'SIRET invalide').max(14, 'SIRET invalide'),
-  representantPrestataire: z.string().min(1, 'Représentant requis'),
-  fonctionPrestataire: z.string().min(1, 'Fonction requise'),
-  
-  // Step 2: Maître d'Ouvrage
-  maitreOuvrage: z.string().min(1, 'Maître d\'ouvrage requis'),
-  representantMaitreOuvrage: z.string().min(1, 'Représentant requis'),
-  contactMaitreOuvrage: z.string().min(1, 'Contact requis'),
-  emailMaitreOuvrage: z.string().email('Email invalide').or(z.literal('')),
-  
-  // Step 3: Localisation
-  nomSite: z.string().min(1, 'Nom du site requis'),
-  adresseSite: z.string().min(1, 'Adresse requise'),
-  codePostal: z.string().regex(/^[0-9]{5}$/, 'Code postal invalide'),
-  ville: z.string().min(1, 'Ville requise'),
-  coordonneesGPS: z.string().optional(),
-  
-  // Step 4: Description des Travaux
-  natureIntervention: z.string().min(1, 'Nature requise'),
-  descriptionTravaux: z.string().min(10, 'Description trop courte (min 10 caractères)'),
-  nombreIntervenants: z.number().min(1, 'Minimum 1 intervenant'),
-  dureeEstimee: z.number().min(1, 'Durée estimée requise'),
-  
-  // Step 5: Planning
-  dateDebut: z.string().min(1, 'Date de début requise'),
-  dateFin: z.string().min(1, 'Date de fin requise'),
-  horairesTravail: z.object({
-    debut: z.string().min(1, 'Heure de début requise'),
-    fin: z.string().min(1, 'Heure de fin requise'),
-    pause: z.string().min(1, 'Heure de pause requise'),
-  }),
-  
-  // Step 6: Risques Identifiés
-  risquesIdentifies: z.array(z.object({
-    risque: z.string().min(1, 'Description du risque requise'),
-    niveau: z.enum(['faible', 'moyen', 'élevé']),
-    mesures: z.string().min(1, 'Mesures préventives requises'),
-  })).min(1, 'Au moins un risque doit être identifié'),
-  
-  // Step 7: Équipements de Sécurité
-  equipementsSecurite: z.array(z.object({
-    type: z.string().min(1, 'Type d\'équipement requis'),
-    quantite: z.number().min(1, 'Quantité requise'),
-    conforme: z.boolean(),
-  })).min(1, 'Au moins un équipement doit être spécifié'),
-  
-  // Step 8: Consignes de Sécurité
-  consignesSecurite: z.string().min(10, 'Les consignes de sécurité sont requises'),
-  consignesUrgence: z.string().min(10, 'Les consignes d\'urgence sont requises'),
-  contactsUrgence: z.string().min(1, 'Les contacts d\'urgence sont requis'),
-  
-  // Step 9: Formation Sécurité
-  formationSecurite: z.boolean(),
-  dateFormation: z.string().optional(),
-  nomFormateur: z.string().optional(),
-  commentaires: z.string().optional(),
-  
-  // Step 10: Documents et Validation
-  documentsFournis: z.array(z.string()).min(1, 'Au moins un document doit être fourni'),
-  accordResponsable: z.boolean().refine(val => val === true, {
-    message: 'Vous devez accepter les conditions',
-  }),
-
-});
-
-// Define the form type from the schema
-type PreventionPlan = z.infer<typeof preventionPlanSchema>;
+import { generateReference } from '@/lib/utils';
+import type { PlanPrevention } from '@/types/prevention';
 
 export default function PreventionFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToast } = useToastStore();
+  const { addPlanPrevention, updatePlanPrevention, getPlanPreventionById } = usePreventionStore();
+  const { user } = useAuthStore();
   
   const isEditing = Boolean(id);
-  const [, setIsSubmitting] = useState(false);
-  
-  const form = useForm<PreventionPlan>({
-    resolver: zodResolver(preventionPlanSchema),
-    defaultValues: {
-      // Default values will be set by the multi-step form
-      entreprisePrestataire: '',
-      siret: '',
-      representantPrestataire: '',
-      fonctionPrestataire: '',
-      maitreOuvrage: '',
-      representantMaitreOuvrage: '',
-      contactMaitreOuvrage: '',
-      emailMaitreOuvrage: '',
-      nomSite: '',
-      adresseSite: '',
-      codePostal: '',
-      ville: '',
-      coordonneesGPS: '',
-      natureIntervention: '',
-      descriptionTravaux: '',
-      nombreIntervenants: 1,
-      dureeEstimee: 8,
-      horairesTravail: { debut: '08:00', fin: '17:00', pause: '12:00' },
-      dateDebut: '',
-      dateFin: '',
-      risquesIdentifies: [
-        {
-          risque: '',
-          niveau: 'faible',
-          mesures: '',
-        },
-      ],
-      equipementsSecurite: [
-        {
-          type: '',
-          quantite: 1,
-          conforme: true,
-        },
-      ],
-      consignesSecurite: '',
-      consignesUrgence: '',
-      contactsUrgence: '',
-      formationSecurite: false,
-      dateFormation: '',
-      nomFormateur: '',
-      commentaires: '',
-      documentsFournis: [],
-      accordResponsable: false,
-    }
-  });
 
   const handleCancel = () => {
     if (window.confirm('Voulez-vous vraiment annuler ? Les modifications non enregistrées seront perdues.')) {
@@ -145,15 +24,165 @@ export default function PreventionFormPage() {
     }
   };
 
-  const onSubmit = form.handleSubmit(async (data: PreventionPlan) => {
+  // Fonction pour soumettre le plan
+  const submitPreventionPlan = async (data: any) => {
     try {
-      setIsSubmitting(true);
       console.log('Submitting prevention plan:', data);
       
-      // Here you would typically send the data to your API
-      // const response = isEditing && id 
-      //   ? await updatePlanPrevention(id, data)
-      //   : await createPlanPrevention(data);
+      const now = new Date();
+      const userEmail = user?.email || '';
+      
+      if (isEditing && id) {
+        const existingPlan = getPlanPreventionById(id);
+        if (existingPlan) {
+          updatePlanPrevention(id, {
+            ...data,
+            modifiePar: userEmail,
+            updatedAt: now,
+          } as Partial<PlanPrevention>);
+        }
+      } else {
+        const newPlan: PlanPrevention = {
+          id: `plan-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          reference: generateReference('PP', now),
+          revision: String(now.getFullYear()),
+          dateCreation: now,
+          dateDebut: data.dateDebut ? new Date(data.dateDebut) : now,
+          dateFin: data.dateFin ? new Date(data.dateFin) : now,
+          status: 'brouillon',
+          projetActivite: data.nomProjet || '',
+          nomSite: data.sites && data.sites.length > 0 ? data.sites[0].nomSite : '',
+          codeSite: data.sites && data.sites.length > 0 ? data.sites[0].codeSite : '',
+          entreprisePrestataire: data.entreprisePrestataire || '',
+          numeroRCS: data.siret || '',
+          siegeSocial: '',
+          representantPrestataire: data.representantPrestataire || '',
+          qualiteFonctionRepresentant: data.fonctionPrestataire || '',
+          contactPrestataire: '',
+          emailPrestataire: '',
+          localite: '',
+          fokontany: '',
+          commune: '',
+          district: '',
+          region: '',
+          coordonneesGPS: '',
+          situationGeographique: 'en_ville',
+          dateSignature: now,
+          signatureDonneurOrdre: {
+            nomPrenom: '',
+            fonction: '',
+            signature: '',
+          },
+          signaturePrestataire: {
+            nomSociete: data.entreprisePrestataire || '',
+            nomPrenom: data.representantPrestataire || '',
+            fonction: data.fonctionPrestataire || '',
+            signature: '',
+          },
+          risquesActivites: {
+            environnement: { actif: false, pollutions: false, incendie: false },
+            social: { actif: false, contestationRiveraine: false, surete: false, autres: '' },
+            santeSécurite: {
+              actif: false,
+              accidentSecuriteRoutiere: false,
+              risqueChimique: false,
+              risqueHauteur: false,
+              risqueEnsevelissement: false,
+              risqueNoyade: false,
+              risqueElectrique: false,
+              risqueOutilsMain: false,
+              risqueOutillageElectroportatif: false,
+              accidentManutentionMecanique: false,
+              accidentManutentionManuelle: false,
+              risqueTravauxChaud: false,
+              risqueTravauxIsole: false,
+              risqueCoactivites: false,
+              risqueAmbianceThermique: false,
+              risqueBruit: false,
+              risquesPsychosociaux: false,
+              risqueMaladiesInfectieuses: false,
+              risquePaludisme: false,
+              autres: '',
+            },
+            infrastructures: { actif: false, risqueAccesSite: false, risqueEtatInfrastructures: false, autresRooftop: '' },
+          },
+          detailsRisques: [],
+          securiteRoutiere: {
+            gestionTempsPause: false,
+            formationConductionDefensive: false,
+            chauffeurApteMedicalement: false,
+            planTrajet: false,
+            geolocalisationFlottes: false,
+            checklistAvantDepart: false,
+            respectReglementsVehicule: false,
+            maintenancePeriodique: false,
+            evidences: [],
+          },
+          installations: [],
+          materielsEquipements: [],
+          documentsHSSES: [],
+          natureIntervention: data.nomProjet || '',
+          descriptionTravaux: '',
+          nombreIntervenants: 1,
+          dureeEstimee: 8,
+          horairesTravail: { debut: '08:00', fin: '17:00', pause: '12:00-13:00' },
+          risques: (data.risquesIdentifies || []).map((r: any, idx: number) => ({
+            id: r.id || `risque-${idx}`,
+            categorie: r.categorie || 'Autre',
+            description: r.risque || '',
+            niveauGravite: r.niveau === 'faible' ? 'faible' : r.niveau === 'modere' ? 'moyen' : r.niveau === 'eleve' ? 'eleve' : 'faible',
+            probabilite: r.probabilite === 'rare' ? 'faible' : r.probabilite === 'peu_probable' ? 'moyenne' : 'elevee',
+            impact: 'moyen',
+            mesuresPrevention: [r.mesures || ''],
+            equipementsNecessaires: [],
+            responsableMesure: '',
+            dateMiseEnPlace: '',
+            verification: false,
+          })),
+          equipements: {
+            equipementsProtection: [],
+            outilsTravail: [],
+            materielSecurite: [],
+            equipementsUrgence: [],
+          },
+          formation: {
+            personnelForme: false,
+            formationsRequises: [],
+            certifications: [],
+            personnelHabilite: [],
+          },
+          proceduresUrgence: {
+            planEvacuation: false,
+            numerosUrgence: [],
+            secouristePresent: false,
+            posteSecours: '',
+            hopitalReference: '',
+          },
+          surveillance: {
+            controlesReguliers: false,
+            frequenceControles: '',
+            responsableControle: '',
+            pointsControle: [],
+          },
+          documents: [],
+          attestations: {
+            assuranceResponsabilite: false,
+            attestationFormation: false,
+            certificatHabilitation: false,
+            autres: data.documentsFournis || [],
+          },
+          suivi: {
+            incidents: [],
+            observations: [],
+            ameliorations: [],
+          },
+          creerPar: userEmail,
+          createdAt: now,
+          updatedAt: now,
+        };
+        
+        addPlanPrevention(newPlan);
+      }
       
       addToast(
         isEditing 
@@ -162,14 +191,18 @@ export default function PreventionFormPage() {
         'success'
       );
       
-      navigate('/prevention');
+      navigate('/interventions');
     } catch (error) {
       console.error('Error submitting prevention plan:', error);
       addToast('Une erreur est survenue lors de la soumission du formulaire', 'error');
-    } finally {
-      setIsSubmitting(false);
     }
-  });
+  };
+
+  // Fonction pour accepter les données directement (depuis PreventionMultiStepForm)
+  const onSubmit = async (data: any) => {
+    // Pas de validation, on sauvegarde directement
+    await submitPreventionPlan(data);
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">

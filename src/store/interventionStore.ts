@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type {
   Intervention,
   InterventionStatus,
@@ -59,193 +60,6 @@ interface InterventionStore {
   getInterventionsActives: () => Intervention[];
   getInterventionsByPermis: (permisId: string) => Intervention[];
 }
-
-export const useInterventionStore = create<InterventionStore>((set, get) => ({
-  interventions: [],
-  selectedIntervention: null,
-
-  setInterventions: (interventions) => set({ interventions }),
-
-  addIntervention: (intervention) =>
-    set((state) => ({
-      interventions: [...state.interventions, intervention],
-    })),
-
-  updateIntervention: (id, updatedIntervention) =>
-    set((state) => ({
-      interventions: state.interventions.map((intervention) =>
-        intervention.id === id
-          ? { ...intervention, ...updatedIntervention, updatedAt: new Date() }
-          : intervention
-      ),
-    })),
-
-  deleteIntervention: (id) =>
-    set((state) => ({
-      interventions: state.interventions.filter((intervention) => intervention.id !== id),
-    })),
-
-  setSelectedIntervention: (intervention) => set({ selectedIntervention: intervention }),
-
-  addValidationJournaliere: (interventionId, validation) =>
-    set((state) => ({
-      interventions: state.interventions.map((intervention) =>
-        intervention.id === interventionId
-          ? {
-              ...intervention,
-              validationsJournalieres: [...intervention.validationsJournalieres, validation],
-              updatedAt: new Date(),
-            }
-          : intervention
-      ),
-    })),
-
-  updateValidationJournaliere: (interventionId, validationId, updatedValidation) =>
-    set((state) => ({
-      interventions: state.interventions.map((intervention) =>
-        intervention.id === interventionId
-          ? {
-              ...intervention,
-              validationsJournalieres: intervention.validationsJournalieres.map((v) =>
-                v.id === validationId ? { ...v, ...updatedValidation } : v
-              ),
-              updatedAt: new Date(),
-            }
-          : intervention
-      ),
-    })),
-
-  addTake5Record: (interventionId, take5) =>
-    set((state) => ({
-      interventions: state.interventions.map((intervention) =>
-        intervention.id === interventionId
-          ? {
-              ...intervention,
-              take5Records: [...intervention.take5Records, take5],
-              updatedAt: new Date(),
-            }
-          : intervention
-      ),
-    })),
-
-  updateTake5Record: (interventionId, take5Id, updatedTake5) =>
-    set((state) => ({
-      interventions: state.interventions.map((intervention) =>
-        intervention.id === interventionId
-          ? {
-              ...intervention,
-              take5Records: intervention.take5Records.map((t) =>
-                t.id === take5Id ? { ...t, ...updatedTake5, updatedAt: new Date() } : t
-              ),
-              updatedAt: new Date(),
-            }
-          : intervention
-      ),
-    })),
-
-  addDocumentProgres: (interventionId, document) =>
-    set((state) => ({
-      interventions: state.interventions.map((intervention) =>
-        intervention.id === interventionId
-          ? {
-              ...intervention,
-              documentsProgres: [...intervention.documentsProgres, document],
-              updatedAt: new Date(),
-            }
-          : intervention
-      ),
-    })),
-
-  addIncident: (interventionId, incident) =>
-    set((state) => ({
-      interventions: state.interventions.map((intervention) =>
-        intervention.id === interventionId
-          ? {
-              ...intervention,
-              incidents: [...(intervention.incidents || []), incident],
-              updatedAt: new Date(),
-            }
-          : intervention
-      ),
-    })),
-
-  updateIncident: (interventionId, incidentId, updatedIncident) =>
-    set((state) => ({
-      interventions: state.interventions.map((intervention) =>
-        intervention.id === interventionId
-          ? {
-              ...intervention,
-              incidents: (intervention.incidents || []).map((inc) =>
-                inc.id === incidentId ? { ...inc, ...updatedIncident } : inc
-              ),
-              updatedAt: new Date(),
-            }
-          : intervention
-      ),
-    })),
-
-  updateInterventionStatus: (id, status) =>
-    set((state) => ({
-      interventions: state.interventions.map((intervention) =>
-        intervention.id === id
-          ? {
-              ...intervention,
-              status,
-              ...(status === 'en_cours' && !intervention.dateDebutReel
-                ? { dateDebutReel: new Date() }
-                : {}),
-              ...(status === 'terminee' && !intervention.dateFinReelle
-                ? { dateFinReelle: new Date() }
-                : {}),
-              updatedAt: new Date(),
-            }
-          : intervention
-      ),
-    })),
-
-  cloturerIntervention: (id, cloturePar, commentaires, dateClotureFormelle) =>
-    set((state) => ({
-      interventions: state.interventions.map((intervention) =>
-        intervention.id === id
-          ? {
-              ...intervention,
-              status: 'terminee',
-              cloturePar,
-              commentairesCloture: commentaires,
-              dateClotureFormelle,
-              dateFinReelle: intervention.dateFinReelle || new Date(),
-              updatedAt: new Date(),
-            }
-          : intervention
-      ),
-    })),
-
-  // Helpers
-  getInterventionById: (id) => {
-    return get().interventions.find((intervention) => intervention.id === id);
-  },
-
-  getInterventionsByStatus: (status) => {
-    return get().interventions.filter((intervention) => intervention.status === status);
-  },
-
-  getInterventionsByPrestataire: (prestataire) => {
-    return get().interventions.filter((intervention) => intervention.prestataire === prestataire);
-  },
-
-  getInterventionsActives: () => {
-    return get().interventions.filter(
-      (intervention) =>
-        intervention.status === 'en_cours' ||
-        intervention.status === 'planifiee' ||
-        intervention.status === 'suspendue'
-    );
-  },
-
-  getInterventionsByPermis: (permisId) => {
-    return get().interventions.filter((intervention) => intervention.permisId === permisId);
-  },
-}));
 
 // Mock data pour le développement
 const mockInterventions: Intervention[] = [
@@ -424,7 +238,196 @@ const mockInterventions: Intervention[] = [
   },
 ];
 
-// Initialiser le store avec les données mock
-if (typeof window !== 'undefined') {
-  useInterventionStore.setState({ interventions: mockInterventions });
-}
+export const useInterventionStore = create<InterventionStore>()(
+  persist(
+    (set, get) => ({
+      interventions: mockInterventions,
+      selectedIntervention: null,
+
+      setInterventions: (interventions) => set({ interventions }),
+
+      addIntervention: (intervention) =>
+        set((state) => ({
+          interventions: [...state.interventions, intervention],
+        })),
+
+      updateIntervention: (id, updatedIntervention) =>
+        set((state) => ({
+          interventions: state.interventions.map((intervention) =>
+            intervention.id === id
+              ? { ...intervention, ...updatedIntervention, updatedAt: new Date() }
+              : intervention
+          ),
+        })),
+
+      deleteIntervention: (id) =>
+        set((state) => ({
+          interventions: state.interventions.filter((intervention) => intervention.id !== id),
+        })),
+
+      setSelectedIntervention: (intervention) => set({ selectedIntervention: intervention }),
+
+      addValidationJournaliere: (interventionId, validation) =>
+        set((state) => ({
+          interventions: state.interventions.map((intervention) =>
+            intervention.id === interventionId
+              ? {
+                ...intervention,
+                validationsJournalieres: [...intervention.validationsJournalieres, validation],
+                updatedAt: new Date(),
+              }
+              : intervention
+          ),
+        })),
+
+      updateValidationJournaliere: (interventionId, validationId, updatedValidation) =>
+        set((state) => ({
+          interventions: state.interventions.map((intervention) =>
+            intervention.id === interventionId
+              ? {
+                ...intervention,
+                validationsJournalieres: intervention.validationsJournalieres.map((v) =>
+                  v.id === validationId ? { ...v, ...updatedValidation } : v
+                ),
+                updatedAt: new Date(),
+              }
+              : intervention
+          ),
+        })),
+
+      addTake5Record: (interventionId, take5) =>
+        set((state) => ({
+          interventions: state.interventions.map((intervention) =>
+            intervention.id === interventionId
+              ? {
+                ...intervention,
+                take5Records: [...intervention.take5Records, take5],
+                updatedAt: new Date(),
+              }
+              : intervention
+          ),
+        })),
+
+      updateTake5Record: (interventionId, take5Id, updatedTake5) =>
+        set((state) => ({
+          interventions: state.interventions.map((intervention) =>
+            intervention.id === interventionId
+              ? {
+                ...intervention,
+                take5Records: intervention.take5Records.map((t) =>
+                  t.id === take5Id ? { ...t, ...updatedTake5, updatedAt: new Date() } : t
+                ),
+                updatedAt: new Date(),
+              }
+              : intervention
+          ),
+        })),
+
+      addDocumentProgres: (interventionId, document) =>
+        set((state) => ({
+          interventions: state.interventions.map((intervention) =>
+            intervention.id === interventionId
+              ? {
+                ...intervention,
+                documentsProgres: [...intervention.documentsProgres, document],
+                updatedAt: new Date(),
+              }
+              : intervention
+          ),
+        })),
+
+      addIncident: (interventionId, incident) =>
+        set((state) => ({
+          interventions: state.interventions.map((intervention) =>
+            intervention.id === interventionId
+              ? {
+                ...intervention,
+                incidents: [...(intervention.incidents || []), incident],
+                updatedAt: new Date(),
+              }
+              : intervention
+          ),
+        })),
+
+      updateIncident: (interventionId, incidentId, updatedIncident) =>
+        set((state) => ({
+          interventions: state.interventions.map((intervention) =>
+            intervention.id === interventionId
+              ? {
+                ...intervention,
+                incidents: (intervention.incidents || []).map((inc) =>
+                  inc.id === incidentId ? { ...inc, ...updatedIncident } : inc
+                ),
+                updatedAt: new Date(),
+              }
+              : intervention
+          ),
+        })),
+
+      updateInterventionStatus: (id, status) =>
+        set((state) => ({
+          interventions: state.interventions.map((intervention) =>
+            intervention.id === id
+              ? {
+                ...intervention,
+                status,
+                ...(status === 'en_cours' && !intervention.dateDebutReel
+                  ? { dateDebutReel: new Date() }
+                  : {}),
+                ...(status === 'terminee' && !intervention.dateFinReelle
+                  ? { dateFinReelle: new Date() }
+                  : {}),
+                updatedAt: new Date(),
+              }
+              : intervention
+          ),
+        })),
+
+      cloturerIntervention: (id, cloturePar, commentaires, dateClotureFormelle) =>
+        set((state) => ({
+          interventions: state.interventions.map((intervention) =>
+            intervention.id === id
+              ? {
+                ...intervention,
+                status: 'terminee',
+                cloturePar,
+                commentairesCloture: commentaires,
+                dateClotureFormelle,
+                dateFinReelle: intervention.dateFinReelle || new Date(),
+                updatedAt: new Date(),
+              }
+              : intervention
+          ),
+        })),
+
+      // Helpers
+      getInterventionById: (id) => {
+        return get().interventions.find((intervention) => intervention.id === id);
+      },
+
+      getInterventionsByStatus: (status) => {
+        return get().interventions.filter((intervention) => intervention.status === status);
+      },
+
+      getInterventionsByPrestataire: (prestataire) => {
+        return get().interventions.filter((intervention) => intervention.prestataire === prestataire);
+      },
+
+      getInterventionsActives: () => {
+        return get().interventions.filter(
+          (intervention) =>
+            intervention.status === 'en_cours' ||
+            intervention.status === 'planifiee' ||
+            intervention.status === 'suspendue'
+        );
+      },
+
+      getInterventionsByPermis: (permisId) => {
+        return get().interventions.filter((intervention) => intervention.permisId === permisId);
+      },
+    }),
+    {
+      name: 'toa-intervention-storage',
+    }
+  )
+);
